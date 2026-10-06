@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="小手机"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#f2f2f7"/>
+<title id="page-title">小手机</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+<style>
+:root {
+  --bg: #f2f2f7;
+  --surface: rgba(255,255,255,0.75);
+  --surface-solid: #ffffff;
+  --surface-2: rgba(245,245,247,0.9);
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.14);
+  --text: #1a1a1a;
+  --text-2: #6e6e73;
+  --text-3: #aeaeb2;
+  --accent: #3a3a3c;
+  --accent-light: rgba(58,58,60,0.08);
+  --blue: #007aff;
+  --blue-light: rgba(0,122,255,0.12);
+  --red: #ff3b30;
+  --green: #34c759;
+  --purple: #5e5ce6;
+  --pink: #ff2d77;
+  --orange: #ff9500;
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 30px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 4px 16px rgba(0,0,0,0.10),0 1px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.14),0 2px 8px rgba(0,0,0,0.08);
+  --blur: blur(20px) saturate(180%);
+  --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+  /* 主题色系统 */
+  --theme-accent: #007aff;
+  --theme-bg: #f2f2f7;
+  --theme-surface: rgba(255,255,255,0.75);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{font-family:'Inter','Noto Sans SC',-apple-system,sans-serif;background:var(--bg);user-select:none;}
+
+/* ===== 全屏容器 ===== */
+#phone-shell{width:100vw;height:100vh;height:100dvh;background:var(--bg);position:relative;overflow:hidden;}
+#screen{position:absolute;inset:0;overflow:hidden;display:flex;flex-direction:column;}
+#notch{display:none;}
+
+/* ===== 壁纸 ===== */
+#wallpaper{position:absolute;inset:0;z-index:0;background:linear-gradient(160deg,#e8e8ed 0%,#d1d1d6 40%,#c7c7cc 100%);transition:background 0.5s;}
+
+/* ===== 状态栏 ===== */
+#status-bar{
+  height:44px;
+  padding:10px 20px 0;
+  padding-top:max(10px,env(safe-area-inset-top,10px));
+  display:flex;align-items:center;justify-content:space-between;
+  position:relative;z-index:100;flex-shrink:0;
+}
+.status-time{font-size:15px;font-weight:600;color:var(--text);letter-spacing:-0.3px;}
+.status-icons{display:flex;align-items:center;gap:6px;}
+.status-icons svg{width:16px;height:16px;fill:var(--text);opacity:.85;}
+
+/* ===== 桌面 ===== */
+#desktop{flex:1;position:relative;z-index:10;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ===== 多页面滑动 ===== */
+.pages-wrapper{flex:1;overflow:hidden;position:relative;}
+.pages-track{
+  display:flex;height:100%;
+  transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  will-change:transform;
+}
+.page{
+  flex-shrink:0;width:100vw;height:100%;
+  padding:8px 16px 4px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  grid-template-rows:repeat(4,1fr);
+  gap:0;
+  align-content:start;
+}
+
+/* 页面指示点 */
+.page-dots{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  height:20px;flex-shrink:0;margin-bottom:4px;
+}
+.page-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:rgba(0,0,0,0.2);
+  transition:all var(--transition);
+}
+.page-dot.active{width:16px;border-radius:3px;background:var(--accent);}
+
+/* ===== 应用图标 ===== */
+.app-icon{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:6px 2px;
+  cursor:pointer;border-radius:var(--radius-sm);
+  transition:transform var(--transition),opacity var(--transition);
+  position:relative;
+  -webkit-touch-callout:none;
+}
+.app-icon:active{transform:scale(0.88);opacity:.7;}
+.app-icon.edit-wiggle{animation:wiggle 0.45s ease-in-out infinite;}
+@keyframes wiggle{0%,100%{transform:rotate(-1.8deg);}50%{transform:rotate(1.8deg);}}
+.app-icon.dragging{opacity:.5;transform:scale(0.92);}
+.app-icon.drag-over{transform:scale(1.08);}
+
+.app-icon-img{
+  width:56px;height:56px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
+  transition:box-shadow var(--transition);
+  flex-shrink:0;
+}
+.app-icon-img img{width:100%;height:100%;object-fit:cover;}
+.app-icon-img.custom-img{background:transparent!important;}
+
+.app-icon-label{
+  font-size:10px;color:var(--text);text-align:center;
+  font-weight:500;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:68px;
+  text-shadow:0 0.5px 1px rgba(255,255,255,0.4);
+}
+/* 删除按钮 */
+.app-del{
+  position:absolute;top:3px;left:4px;
+  width:20px;height:20px;background:var(--red);border-radius:50%;
+  display:none;align-items:center;justify-content:center;z-index:10;
+  box-shadow:var(--shadow-sm);
+}
+.edit-wiggle .app-del{display:flex;}
+.app-del svg{width:10px;height:10px;fill:white;}
+
+/* 添加应用按钮（页内） */
+.add-app-cell{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:6px 2px;cursor:pointer;border-radius:var(--radius-sm);
+  transition:opacity var(--transition);
+}
+.add-app-cell:active{opacity:.6;}
+.add-app-dot{
+  width:56px;height:56px;border-radius:13px;
+  background:rgba(255,255,255,0.3);border:2px dashed rgba(0,0,0,0.15);
+  display:flex;align-items:center;justify-content:center;
+}
+.add-app-dot svg{width:22px;height:22px;opacity:.35;}
+
+/* 添加新页面 */
+.add-page-btn{
+  flex-shrink:0;width:100vw;height:100%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  cursor:pointer;opacity:.5;transition:opacity var(--transition);
+}
+.add-page-btn:active{opacity:.3;}
+.add-page-circle{
+  width:64px;height:64px;border-radius:50%;
+  border:2px dashed rgba(0,0,0,0.3);
+  display:flex;align-items:center;justify-content:center;
+}
+.add-page-circle svg{width:28px;height:28px;opacity:.6;}
+.add-page-label{font-size:13px;color:var(--text-2);}
+
+/* ===== Dock ===== */
+#dock{
+  height:auto;padding:8px 20px;
+  padding-bottom:max(20px,env(safe-area-inset-bottom,20px));
+  display:flex;align-items:center;justify-content:space-around;
+  flex-shrink:0;position:relative;z-index:50;
+}
+.dock-bg{position:absolute;inset:0;background:rgba(255,255,255,0.55);backdrop-filter:var(--blur);border-top:1px solid var(--border);}
+.dock-app{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  cursor:pointer;border-radius:var(--radius-sm);padding:4px 8px;
+  transition:transform var(--transition),opacity var(--transition);position:relative;z-index:1;
+}
+.dock-app:active{transform:scale(0.88);opacity:.7;}
+.dock-icon{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-sm);}
+.dock-icon img{width:100%;height:100%;object-fit:cover;border-radius:12px;}
+.dock-label{font-size:10px;color:var(--text);font-weight:500;}
+
+/* ===== 编辑模式遮罩 ===== */
+.edit-mode-bar{
+  position:absolute;top:0;left:0;right:0;
+  padding:max(10px,env(safe-area-inset-top,10px)) 16px 10px;
+  display:flex;justify-content:flex-end;z-index:200;
+}
+.edit-done-btn{
+  background:rgba(255,255,255,0.85);backdrop-filter:var(--blur);
+  border:1px solid var(--border);border-radius:20px;
+  padding:6px 16px;font-size:13px;font-weight:600;color:var(--blue);
+  cursor:pointer;
+}
+
+/* ===== 桌面组件 ===== */
+/* 大时钟组件 */
+.widget-clock{
+  grid-column:span 4;
+  padding:16px 20px 10px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.wc-date{font-size:15px;color:var(--text-2);font-weight:400;}
+.wc-time{font-size:72px;font-weight:700;color:var(--text);letter-spacing:-2px;line-height:1;}
+.wc-motto{
+  margin-top:6px;font-size:12px;color:var(--text-2);
+  background:rgba(255,255,255,0.6);backdrop-filter:var(--blur);
+  border-radius:20px;padding:5px 14px;border:1px solid var(--border);
+}
+
+/* My Space 组件 (4x2) */
+.widget-myspace{
+  grid-column:span 4;
+  margin:4px 0;
+  background:rgba(255,255,255,0.7);backdrop-filter:var(--blur);
+  border-radius:var(--radius-lg);border:1px solid var(--border);
+  box-shadow:var(--shadow);padding:16px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.ms-top{display:flex;align-items:center;justify-content:space-between;}
+.ms-title{font-size:14px;font-weight:600;color:var(--text);}
+.ms-avatar{
+  width:60px;height:60px;border-radius:50%;
+  background:var(--border);border:2.5px solid white;
+  box-shadow:var(--shadow-sm);overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;margin:0 auto;
+}
+.ms-avatar img{width:100%;height:100%;object-fit:cover;}
+.ms-name{font-size:14px;font-weight:700;color:var(--text);text-align:center;margin-top:4px;}
+.ms-stats{display:flex;gap:8px;}
+.ms-stat{flex:1;background:rgba(0,0,0,0.04);border-radius:10px;padding:8px 6px;text-align:center;}
+.ms-stat-num{font-size:13px;font-weight:700;color:var(--text);}
+.ms-stat-label{font-size:10px;color:var(--text-2);margin-top:1px;}
+
+/* Our Journey 组件 (4x1) */
+.widget-journey{
+  grid-column:span 4;
+  background:rgba(255,255,255,0.7);backdrop-filter:var(--blur);
+  border-radius:var(--radius-lg);border:1px solid var(--border);
+  box-shadow:var(--shadow);padding:12px 16px;
+  display:flex;align-items:center;gap:10px;margin:4px 0;
+}
+.wj-info{flex:1;min-width:0;}
+.wj-title{font-size:14px;font-weight:700;color:var(--text);}
+.wj-sub{font-size:11px;color:var(--text-3);margin-top:3px;display:flex;align-items:center;gap:4px;}
+.wj-line{flex:1;height:1px;background:var(--border-strong);}
+.wj-avatar{width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--border);}
+.wj-avatar img{width:100%;height:100%;object-fit:cover;}
+
+/* ===== 应用全屏层 ===== */
+.app-screen{
+  position:absolute;inset:0;z-index:300;
+  background:var(--surface-solid);border-radius:0;overflow:hidden;
+  display:flex;flex-direction:column;
+  transform:translateY(100%);
+  transition:transform 0.38s cubic-bezier(0.32,0.72,0,1);
+  will-change:transform;
+}
+.app-screen.open{transform:translateY(0);}
+.app-status-pad{height:max(44px,env(safe-area-inset-top,44px));flex-shrink:0;}
+.app-nav{
+  height:52px;padding:0 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  background:rgba(255,255,255,0.85);backdrop-filter:var(--blur);
+}
+.app-nav-title{font-size:16px;font-weight:600;color:var(--text);}
+.nav-btn{
+  display:flex;align-items:center;gap:3px;color:var(--blue);
+  font-size:14px;font-weight:500;cursor:pointer;
+  padding:6px 8px;border-radius:var(--radius-sm);
+  transition:opacity var(--transition);min-width:60px;
+}
+.nav-btn:active{opacity:.6;}
+.nav-btn svg{width:18px;height:18px;fill:none;stroke:var(--blue);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.app-content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;}
+
+/* ===== 设置 ===== */
+.settings-section{margin:16px 16px 0;}
+.settings-label{font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.08em;padding:0 4px;margin-bottom:6px;}
+.settings-group{background:var(--surface-solid);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;}
+.settings-item{display:flex;align-items:center;padding:13px 14px;gap:10px;cursor:pointer;transition:background var(--transition);position:relative;}
+.settings-item:not(:last-child)::after{content:'';position:absolute;bottom:0;left:14px;right:0;height:1px;background:var(--border);}
+.settings-item:active{background:var(--accent-light);}
+.settings-item-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.settings-item-icon svg{width:15px;height:15px;}
+.settings-item-body{flex:1;min-width:0;}
+.settings-item-title{font-size:14px;color:var(--text);font-weight:500;}
+.settings-item-desc{font-size:11px;color:var(--text-2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.settings-item-arrow svg{width:14px;height:14px;fill:none;stroke:var(--text-3);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+
+/* 2列卡片式设置 */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 16px 0;}
+.settings-card{
+  background:var(--surface-solid);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px;cursor:pointer;
+  transition:all var(--transition);
+}
+.settings-card:active{opacity:.7;}
+.settings-card-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.settings-card-desc{font-size:11px;color:var(--text-2);}
+.settings-card-icon{width:36px;height:36px;margin:12px 0 4px;display:flex;align-items:center;justify-content:center;}
+.settings-card-icon svg{width:28px;height:28px;}
+
+/* ===== 表单 ===== */
+.api-form{padding:14px;display:flex;flex-direction:column;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;}
+.form-input{
+  background:var(--surface-solid);border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--text);
+  font-family:inherit;outline:none;width:100%;
+  transition:border-color var(--transition),box-shadow var(--transition);
+}
+.form-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-light);}
+.form-input::placeholder{color:var(--text-3);}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23aeaeb2' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;cursor:pointer;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.slider-group{display:flex;align-items:center;gap:8px;}
+.slider-val{font-size:12px;font-weight:600;color:var(--text);min-width:28px;text-align:right;}
+input[type=range]{flex:1;height:4px;border-radius:2px;background:var(--border);outline:none;-webkit-appearance:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--text);box-shadow:var(--shadow-sm);cursor:pointer;}
+
+.btn{padding:11px 18px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;border:none;transition:transform var(--transition),opacity var(--transition);text-align:center;}
+.btn:active{transform:scale(0.96);opacity:.8;}
+.btn-primary{background:var(--blue);color:white;}
+.btn-secondary{background:var(--accent-light);color:var(--text);}
+.btn-danger{background:rgba(255,59,48,.1);color:var(--red);}
+
+.toggle{width:44px;height:26px;border-radius:13px;background:var(--border);position:relative;cursor:pointer;transition:background var(--transition);flex-shrink:0;}
+.toggle.on{background:var(--green);}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:white;box-shadow:var(--shadow-sm);transition:transform var(--transition);}
+.toggle.on .toggle-thumb{transform:translateX(18px);}
+
+/* 颜色选择器 */
+.color-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:6px;}
+.color-swatch{
+  width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;
+  border:2px solid transparent;transition:transform var(--transition),border-color var(--transition);
+}
+.color-swatch:active{transform:scale(.88);}
+.color-swatch.selected{border-color:var(--text);}
+
+/* ===== 主题选择 ===== */
+.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:6px;}
+.theme-card{
+  border-radius:var(--radius);overflow:hidden;cursor:pointer;
+  border:2px solid transparent;transition:all var(--transition);
+  aspect-ratio:1.6;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:600;
+}
+.theme-card.selected{border-color:var(--blue);}
+
+/* ===== Modal ===== */
+.modal-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,0.4);
+  z-index:500;display:flex;align-items:flex-end;border-radius:0;
+  overflow:hidden;backdrop-filter:blur(4px);
+}
+.modal-sheet{
+  width:100%;background:var(--surface-solid);
+  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  padding:8px 18px 32px;max-height:82%;overflow-y:auto;
+}
+.modal-handle{width:36px;height:4px;background:var(--border-strong);border-radius:2px;margin:0 auto 14px;}
+.modal-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px;}
+
+/* ===== Toast ===== */
+.toast{
+  position:absolute;top:60px;left:50%;
+  transform:translateX(-50%) translateY(-16px);
+  background:rgba(28,28,30,0.88);color:white;
+  padding:7px 16px;border-radius:20px;font-size:13px;
+  white-space:nowrap;z-index:1000;opacity:0;
+  transition:all 0.28s;pointer-events:none;backdrop-filter:var(--blur);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ===== 应用图标颜色 ===== */
+.ic-chat{background:linear-gradient(135deg,#34aadc,#1e90ff);}
+.ic-world{background:linear-gradient(135deg,#5ac8fa,#34aadc);}
+.ic-memory{background:linear-gradient(135deg,#ff9500,#ff6000);}
+.ic-archive{background:linear-gradient(135deg,#64d2ff,#30b0c7);}
+.ic-store{background:linear-gradient(135deg,#5e5ce6,#4a4ad0);}
+.ic-notif{background:linear-gradient(135deg,#ff3b30,#c0392b);}
+.ic-beauty{background:linear-gradient(135deg,#ff6ec7,#ff2d77);}
+.ic-setting{background:linear-gradient(135deg,#8e8e93,#636366);}
+.ic-music{background:linear-gradient(135deg,#ff2d77,#ff6ec7);}
+
+/* ===== 聊天 ===== */
+.chat-messages{flex:1;overflow-y:auto;overflow-x:hidden;padding:10px 12px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;}
+.msg-row{display:flex;gap:7px;align-items:flex-end;max-width:100%;}
+.msg-row.right{flex-direction:row-reverse;}
+.msg-avatar{width:28px;height:28px;border-radius:50%;background:var(--border);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-3);align-self:flex-end;}
+.msg-avatar img{width:100%;height:100%;object-fit:cover;}
+.msg-col{display:flex;flex-direction:column;gap:3px;max-width:calc(100% - 43px);}
+.msg-row.right .msg-col{align-items:flex-end;}
+.msg-name{font-size:10px;color:var(--text-3);padding:0 3px;}
+.bubble{padding:8px 11px;border-radius:17px;font-size:13.5px;line-height:1.5;color:var(--text);background:var(--surface-solid);border:1px solid var(--border);box-shadow:var(--shadow-sm);word-break:break-word;white-space:pre-wrap;position:relative;}
+.bubble.right{background:var(--blue);color:white;border-color:transparent;}
+.bubble.narration{background:rgba(0,0,0,0.04);border:1px dashed var(--border-strong);font-style:italic;color:var(--text-2);font-size:12px;border-radius:10px;text-align:center;align-self:center;max-width:90%;}
+.bubble.thinking{background:rgba(255,149,0,.08);border-color:rgba(255,149,0,.25);color:var(--text-2);font-size:12px;border-radius:10px;}
+.typing-dot{display:inline-flex;gap:3px;align-items:center;padding:2px 0;}
+.typing-dot span{width:5px;height:5px;border-radius:50%;background:var(--text-3);animation:bounce 1.2s ease-in-out infinite;}
+.typing-dot span:nth-child(2){animation-delay:.2s;}
+.typing-dot span:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);opacity:.4;}40%{transform:translateY(-4px);opacity:1;}}
+.msg-time{font-size:10px;color:var(--text-3);padding:0 3px;}
+.msg-actions{position:absolute;bottom:calc(100% + 5px);background:rgba(28,28,30,.92);backdrop-filter:var(--blur);border-radius:12px;padding:5px 3px;display:flex;gap:2px;z-index:100;box-shadow:var(--shadow-lg);white-space:nowrap;}
+.msg-action-btn{padding:5px 9px;font-size:12px;color:white;cursor:pointer;border-radius:8px;transition:background var(--transition);}
+.msg-action-btn:hover{background:rgba(255,255,255,.12);}
+.chat-input-area{padding:7px 12px;padding-bottom:max(12px,env(safe-area-inset-bottom,12px));border-top:1px solid var(--border);background:rgba(255,255,255,.9);backdrop-filter:var(--blur);flex-shrink:0;display:flex;flex-direction:column;gap:7px;}
+.input-row{display:flex;align-items:flex-end;gap:7px;}
+.chat-input-box{flex:1;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:20px;padding:8px 13px;font-size:14px;font-family:inherit;color:var(--text);outline:none;resize:none;min-height:36px;max-height:90px;line-height:1.4;overflow-y:auto;transition:border-color var(--transition);}
+.chat-input-box:focus{border-color:var(--blue);}
+.chat-input-box::placeholder{color:var(--text-3);}
+.send-btn{width:34px;height:34px;border-radius:50%;background:var(--blue);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform var(--transition),opacity var(--transition);}
+.send-btn:active{transform:scale(.88);}
+.send-btn:disabled{opacity:.4;}
+.send-btn svg{width:14px;height:14px;fill:white;}
+.input-toolbar{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.toolbar-btn{padding:4px 9px;border-radius:20px;font-size:11px;font-weight:500;color:var(--text-2);background:var(--surface-2);border:1px solid var(--border);cursor:pointer;transition:all var(--transition);display:flex;align-items:center;gap:3px;}
+.toolbar-btn:active{opacity:.6;}
+.toolbar-btn.active{background:var(--blue-light);color:var(--blue);border-color:rgba(0,122,255,.3);}
+.toolbar-btn svg{width:12px;height:12px;}
+.chat-header-avatar{width:34px;height:34px;border-radius:50%;background:var(--border);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--text-3);}
+.chat-header-avatar img{width:100%;height:100%;object-fit:cover;}
+.session-item{display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all var(--transition);}
+.session-item:active{opacity:.7;}
+.session-item.active{border-color:var(--blue);background:var(--blue-light);}
+.session-avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.session-avatar img{width:100%;height:100%;object-fit:cover;}
+.session-info{flex:1;min-width:0;}
+.session-name{font-size:13px;font-weight:600;color:var(--text);}
+.session-preview{font-size:11px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+.session-time{font-size:10px;color:var(--text-3);flex-shrink:0;}
+.char-item{display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all var(--transition);}
+.char-item.active{border-color:var(--blue);background:var(--blue-light);}
+.char-avatar{width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;}
+.char-info{flex:1;min-width:0;}
+.char-name{font-size:13px;font-weight:600;color:var(--text);}
+.char-desc{font-size:11px;color:var(--text-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.model-check{width:18px;height:18px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity var(--transition);}
+.char-item.active .model-check{opacity:1;}
+.model-check svg{width:10px;height:10px;fill:white;}
+
+/* ===== 音乐播放器 ===== */
+.music-player{display:flex;flex-direction:column;height:100%;}
+.music-cover-area{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;padding:20px;
+  background:linear-gradient(180deg,var(--surface-2) 0%,var(--surface-solid) 100%);
+}
+.music-cover{
+  width:180px;height:180px;border-radius:var(--radius-lg);
+  background:linear-gradient(135deg,#ff6ec7,#ff2d77);
+  box-shadow:var(--shadow-lg);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;flex-shrink:0;
+}
+.music-cover img{width:100%;height:100%;object-fit:cover;}
+.music-cover svg{width:64px;height:64px;fill:white;opacity:.6;}
+.music-info{text-align:center;}
+.music-song-name{font-size:18px;font-weight:700;color:var(--text);}
+.music-artist-name{font-size:14px;color:var(--text-2);margin-top:4px;}
+.music-controls-area{padding:16px 24px 20px;background:var(--surface-solid);border-top:1px solid var(--border);}
+.music-progress-wrap{margin-bottom:12px;}
+.music-progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;cursor:pointer;position:relative;}
+.music-progress-fill{height:100%;background:var(--pink);border-radius:2px;transition:width .1s;}
+.music-progress-times{display:flex;justify-content:space-between;font-size:10px;color:var(--text-3);margin-top:4px;font-variant-numeric:tabular-nums;}
+.music-btns{display:flex;align-items:center;justify-content:space-around;gap:8px;}
+.music-btn{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform var(--transition),opacity var(--transition);}
+.music-btn:active{transform:scale(.88);opacity:.7;}
+.music-btn svg{width:22px;height:22px;fill:var(--text);opacity:.7;}
+.music-btn.primary{background:var(--pink);width:52px;height:52px;}
+.music-btn.primary svg{fill:white;opacity:1;width:26px;height:26px;}
+.music-playlist{border-top:1px solid var(--border);overflow-y:auto;max-height:200px;}
+.playlist-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background var(--transition);}
+.playlist-item:active{background:var(--accent-light);}
+.playlist-item.playing{color:var(--pink);}
+.playlist-item-name{flex:1;font-size:13px;color:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.playlist-item-dur{font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums;}
+.playlist-item-del{width:20px;height:20px;border-radius:50%;background:rgba(255,59,48,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.playlist-item-del svg{width:10px;height:10px;fill:var(--red);}
+
+/* ===== 语音API ===== */
+.voice-test-area{background:var(--surface-2);border-radius:var(--radius-sm);padding:12px;border:1px solid var(--border);display:flex;flex-direction:column;gap:8px;}
+
+/* ===== 美化/主题 ===== */
+.beautify-upload-area{border:2px dashed var(--border-strong);border-radius:var(--radius);padding:22px;text-align:center;cursor:pointer;transition:all var(--transition);}
+.beautify-upload-area:active{opacity:.7;}
+.beautify-upload-area p{font-size:12px;color:var(--text-2);margin-top:5px;}
+.beautify-upload-area svg{width:24px;height:24px;opacity:.35;}
+.beauty-preview{width:100%;height:70px;border-radius:var(--radius-sm);background-size:cover;background-position:center;border:1px solid var(--border);margin-top:6px;}
+.code-input{font-family:'SF Mono','Fira Code',monospace;font-size:12px;min-height:70px;resize:vertical;}
+.app-icon-preview-big{width:76px;height:76px;border-radius:19px;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;font-size:34px;background:linear-gradient(135deg,#3a3a3c,#636366);color:white;}
+.app-icon-preview-big img{width:100%;height:100%;object-fit:cover;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;height:100%;padding:40px 24px;color:var(--text-3);}
+.empty-state svg{width:38px;height:38px;opacity:.35;}
+.empty-state p{font-size:13px;text-align:center;line-height:1.5;}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:2px;}
+/* 图标图片预览 */
+.img-preview-row{display:flex;gap:6px;flex-wrap:wrap;}
+.img-preview-item{width:54px;height:54px;border-radius:8px;overflow:hidden;position:relative;border:1px solid var(--border);}
+.img-preview-item img{width:100%;height:100%;object-fit:cover;}
+.img-preview-del{position:absolute;top:2px;right:2px;width:15px;height:15px;background:rgba(0,0,0,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.img-preview-del svg{width:7px;height:7px;fill:white;}
+.model-list{display:flex;flex-direction:column;gap:5px;margin-top:5px;}
+.model-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface-2);border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer;transition:border-color var(--transition);}
+.model-item.selected{border-color:var(--blue);background:var(--blue-light);}
+.model-item-name{font-size:13px;font-weight:500;color:var(--text);}
+.chip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;background:var(--accent-light);color:var(--text);}
+.chip.blue{background:var(--blue-light);color:var(--blue);}
+.chip.red{background:rgba(255,59,48,.1);color:var(--red);}
+.tab-bar{display:flex;background:var(--surface-2);border-radius:var(--radius-sm);padding:3px;gap:2px;}
+.tab-item{flex:1;padding:6px;text-align:center;font-size:12px;font-weight:500;color:var(--text-2);border-radius:7px;cursor:pointer;transition:all var(--transition);}
+.tab-item.active{background:var(--surface-solid);color:var(--text);box-shadow:var(--shadow-sm);}
+</style>
+</head>
+<body>
+<div id="app">
+ <div id="phone-shell">
+  <div id="screen">
+   <div id="notch"></div>
+   <!-- 壁纸 -->
+   <div id="wallpaper" :style="wallpaperStyle"></div>
+   <!-- Toast -->
+   <div class="toast" :class="{show:toast.show}">{{toast.msg}}</div>
+
+   <!-- 编辑模式完成按钮 -->
+   <div class="edit-mode-bar" v-if="editMode" style="position:absolute;top:0;left:0;right:0;z-index:200;padding:max(54px,calc(env(safe-area-inset-top,10px)+44px)) 16px 0;display:flex;justify-content:flex-end;">
+     <div class="edit-done-btn" @click="exitEditMode">完成</div>
+   </div>
+
+   <!-- 状态栏 -->
+   <div id="status-bar">
+     <div class="status-time">{{currentTime}}</div>
+     <div class="status-icons">
+       <svg viewBox="0 0 24 24"><path d="M1.5 8.5C5.5 4.5 10.5 2.5 12 2.5s6.5 2 10.5 6"/><path d="M5 12c1.9-1.9 4.4-3 7-3s5.1 1.1 7 3"/><path d="M8.5 15.5c.9-.9 2.2-1.5 3.5-1.5s2.6.6 3.5 1.5"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+       <svg viewBox="0 0 24 24"><rect x="2" y="7" width="16" height="11" rx="2" stroke-width="1.5" stroke="currentColor" fill="none"/><path d="M20 11v3a1 1 0 001-1v-1a1 1 0 00-1-1z" fill="currentColor"/><rect x="4" y="9" width="10" height="7" rx="1" fill="currentColor"/></svg>
+     </div>
+   </div>
+
+   <!-- 桌面 -->
+   <div id="desktop">
+     <!-- 多页面轨道 -->
+     <div class="pages-wrapper"
+       @touchstart.passive="onTouchStart"
+       @touchmove.passive="onTouchMove"
+       @touchend="onTouchEnd"
+       @mousedown="onMouseDown"
+       @mousemove="onMouseMove"
+       @mouseup="onMouseUp"
+       @mouseleave="onMouseUp"
+       @click.self="exitEditMode">
+       <div class="pages-track" :style="{transform:`translateX(${trackX}px)`}">
+         <!-- 各页面 -->
+         <div v-for="(page, pi) in pages" :key="'page'+pi" class="page">
+           <!-- 时钟组件（仅第0页顶部） -->
+           <template v-if="pi===0">
+             <div class="widget-clock" @longpress="enterEditMode">
+               <div class="wc-date">{{fullDate}}</div>
+               <div class="wc-time">{{currentTime}}</div>
+               <div class="wc-motto">{{desktopMotto || '.* I enjoy life now ☁️ .*'}}</div>
+             </div>
+           </template>
+           <!-- 应用图标 -->
+           <div v-for="(app, ai) in page.apps" :key="app.id"
+             class="app-icon"
+             :class="{['edit-wiggle']:editMode, dragging: dragId===app.id}"
+             @click="!editMode && openApp(app.id)"
+             @mousedown.stop="startLongPress($event, app, pi, ai)"
+             @mouseup.stop="clearLongPress"
+             @mouseleave.stop="clearLongPress"
+             @touchstart.passive="startLongPress($event, app, pi, ai)"
+             @touchend.stop="clearLongPress"
+             @dragover.prevent="onDragOver(pi, ai)"
+             @drop.prevent="onDrop(pi, ai)"
+             :draggable="editMode"
+             @dragstart="onDragStart(app, pi, ai)">
+             <div class="app-del" @click.stop="deleteApp(pi, ai)">
+               <svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2L2 8" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+             </div>
+             <div class="app-icon-img" :class="[app.customIcon ? 'custom-img' : app.color]">
+               <img v-if="app.customIcon" :src="app.customIcon"/>
+               <svg v-else viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" v-html="app.icon"></svg>
+             </div>
+             <div class="app-icon-label">{{app.label}}</div>
+           </div>
+           <!-- 添加应用（编辑模式） -->
+           <div v-if="editMode" class="add-app-cell" @click="openAddAppSheet(pi)">
+             <div class="add-app-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+             <div class="app-icon-label" style="opacity:.4">添加</div>
+           </div>
+         </div>
+         <!-- 添加新页面（编辑模式才显示） -->
+         <div class="add-page-btn" v-if="editMode" @click="addPage">
+           <div class="add-page-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+           <div class="add-page-label">添加页面</div>
+         </div>
+       </div>
+     </div>
+
+     <!-- 页面指示点 -->
+     <div class="page-dots">
+       <div v-for="(p,i) in pages" :key="i" class="page-dot" :class="{active:currentPage===i}"></div>
+     </div>
+
+     <!-- Dock -->
+     <div id="dock">
+       <div class="dock-bg"></div>
+       <div v-for="app in dockApps" :key="app.id" class="dock-app"
+         @click="openApp(app.id)"
+         @mousedown="startLongPress($event, app, -1, -1)"
+         @mouseup="clearLongPress"
+         @touchstart.passive="startLongPress($event, app, -1, -1)"
+         @touchend="clearLongPress">
+         <div class="dock-icon" :class="[app.customIcon ? '' : app.color]" :style="app.customIcon ? {} : {}">
+           <img v-if="app.customIcon" :src="app.customIcon" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"/>
+           <svg v-else viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" v-html="app.icon"></svg>
+         </div>
+         <div class="dock-label">{{app.label}}</div>
+       </div>
+     </div>
+   </div>
+
+   <!-- ====== 聊天列表 ====== -->
+   <div class="app-screen" :class="{open:activeApp==='chat'&&chatView==='list'}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav">
+       <div class="nav-btn" @click="closeApp"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>返回</div>
+       <div class="app-nav-title">聊天</div>
+       <div class="nav-btn" @click="newSession" style="justify-content:flex-end;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+     </div>
+     <div class="app-content">
+       <div v-if="!activeApiConfig" style="margin:12px;padding:12px;background:rgba(255,149,0,.1);border:1px solid rgba(255,149,0,.3);border-radius:var(--radius-sm);">
+         <div style="font-size:13px;font-weight:600;color:#ff9500;margin-bottom:2px;">未配置 API</div>
+         <div style="font-size:11.5px;color:var(--text-2);">请先在设置中配置 API Key。</div>
+       </div>
+       <div style="display:flex;flex-direction:column;gap:6px;padding:12px;">
+         <div v-for="sess in chatSessions" :key="sess.id" class="session-item" :class="{active:currentSession?.id===sess.id}" @click="openSession(sess)">
+           <div class="session-avatar"><img v-if="sess.charAvatar" :src="sess.charAvatar"/><span v-else>{{sess.charName?.[0]||'?'}}</span></div>
+           <div class="session-info"><div class="session-name">{{sess.charName||'新对话'}}</div><div class="session-preview">{{sess.lastMsg||'暂无消息'}}</div></div>
+           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;">
+             <div class="session-time">{{sess.lastTime||''}}</div>
+             <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,59,48,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;" @click.stop="deleteSession(sess.id)">
+               <svg viewBox="0 0 24 24" width="11" height="11" fill="var(--red)"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+             </div>
+           </div>
+         </div>
+         <div class="empty-state" v-if="!chatSessions.length" style="height:50vh;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><p>还没有对话<br/><span style="font-size:11px;opacity:.6">点右上角 + 新建</span></p></div>
+       </div>
+     </div>
+   </div>
+
+   <!-- ====== 聊天界面 ====== -->
+   <div class="app-screen" :class="{open:activeApp==='chat'&&chatView==='chat'}" style="background:var(--bg);">
+     <div class="app-status-pad"></div>
+     <div class="app-nav" style="background:rgba(255,255,255,.85);backdrop-filter:var(--blur);">
+       <div class="nav-btn" @click="chatView='list'"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+       <div style="display:flex;align-items:center;gap:7px;flex:1;justify-content:center;">
+         <div class="chat-header-avatar"><img v-if="currentSession?.charAvatar" :src="currentSession.charAvatar"/><span v-else>{{currentSession?.charName?.[0]||'?'}}</span></div>
+         <div><div style="font-size:14px;font-weight:600;color:var(--text);">{{currentSession?.charName||'对话'}}</div><div style="font-size:11px;" :style="{color:isStreaming?'var(--green)':'var(--text-3)'}">{{isStreaming?'正在输入...':(currentSession?.charDesc?.slice(0,16)||'AI 助手')}}</div></div>
+       </div>
+       <div class="nav-btn" @click="showChatSettingsModal=true" style="justify-content:flex-end;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="5" r="1.2" fill="var(--blue)"/><circle cx="12" cy="12" r="1.2" fill="var(--blue)"/><circle cx="12" cy="19" r="1.2" fill="var(--blue)"/></svg></div>
+     </div>
+     <div class="chat-messages" ref="messagesEl" @click="msgMenu.id=null">
+       <div v-for="(msg,idx) in currentMessages" :key="msg.id">
+         <div v-if="msg.type==='narration'" style="padding:2px 0;"><div class="bubble narration">{{msg.content}}</div></div>
+         <div v-else-if="msg.role==='assistant'" class="msg-row">
+           <div class="msg-avatar"><img v-if="currentSession?.charAvatar" :src="currentSession.charAvatar"/><span v-else>{{currentSession?.charName?.[0]||'A'}}</span></div>
+           <div class="msg-col">
+             <div class="msg-name">{{currentSession?.charName}}</div>
+             <div v-if="msg.thinking&&showThinking" class="bubble thinking" style="font-size:11px;color:var(--text-2);">💭 {{msg.thinking}}</div>
+             <div class="bubble" style="position:relative;"
+               @mousedown="startMsgLongPress(msg)" @mouseup="clearMsgLongPress" @touchstart.passive="startMsgLongPress(msg)" @touchend="clearMsgLongPress">
+               <span v-if="msg.streaming"><span v-if="msg.content">{{msg.content}}</span><span class="typing-dot" v-else><span></span><span></span><span></span></span></span>
+               <span v-else>{{msg.content}}</span>
+               <div v-if="msgMenu.id===msg.id" class="msg-actions" @click.stop>
+                 <div class="msg-action-btn" @click="copyMsg(msg)">复制</div>
+                 <div class="msg-action-btn" @click="deleteMsg(idx)">删除</div>
+                 <div class="msg-action-btn" @click="regenMsg(idx)">重生成</div>
+               </div>
+             </div>
+             <div class="msg-time">{{msg.time}}</div>
+           </div>
+         </div>
+         <div v-else-if="msg.role==='user'" class="msg-row right">
+           <div class="msg-avatar"><img v-if="userProfile.avatarUrl" :src="userProfile.avatarUrl"/><span v-else>我</span></div>
+           <div class="msg-col">
+             <div v-if="msg.images&&msg.images.length" class="img-preview-row" style="justify-content:flex-end;"><div v-for="img in msg.images" :key="img" style="width:80px;height:80px;border-radius:10px;overflow:hidden;"><img :src="img" style="width:100%;height:100%;object-fit:cover;"/></div></div>
+             <div class="bubble right" style="position:relative;"
+               @mousedown="startMsgLongPress(msg)" @mouseup="clearMsgLongPress" @touchstart.passive="startMsgLongPress(msg)" @touchend="clearMsgLongPress">
+               {{msg.content}}
+               <div v-if="msgMenu.id===msg.id" class="msg-actions" style="right:0;left:auto;" @click.stop>
+                 <div class="msg-action-btn" @click="copyMsg(msg)">复制</div>
+                 <div class="msg-action-btn" @click="deleteMsg(idx)">删除</div>
+               </div>
+             </div>
+             <div class="msg-time" style="text-align:right;">{{msg.time}}</div>
+           </div>
+         </div>
+       </div>
+     </div>
+     <div class="chat-input-area">
+       <div class="img-preview-row" v-if="pendingImages.length">
+         <div v-for="(img,i) in pendingImages" :key="i" class="img-preview-item"><img :src="img"/><div class="img-preview-del" @click="pendingImages.splice(i,1)"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2L2 8" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div></div>
+       </div>
+       <div class="input-row">
+         <textarea class="chat-input-box" v-model="chatInput" ref="chatInputEl" :placeholder="isStreaming?'AI 正在回复...':'输入消息...'" :disabled="isStreaming" @keydown.enter.exact.prevent="sendMessage" @input="autoResizeInput" rows="1"></textarea>
+         <button class="send-btn" @click="sendMessage" :disabled="isStreaming||(!chatInput.trim()&&!pendingImages.length)"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg></button>
+       </div>
+       <div class="input-toolbar">
+         <div class="toolbar-btn" @click="insertNarration"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>旁白</div>
+         <div class="toolbar-btn" :class="{active:showThinking}" @click="showThinking=!showThinking">💭 思考</div>
+         <div class="toolbar-btn" :class="{active:multiTurnEnabled}" @click="multiTurnEnabled=!multiTurnEnabled">多轮</div>
+         <div class="toolbar-btn" @click="showSystemPromptModal=true">提示词</div>
+         <div class="toolbar-btn" v-if="activeApiConfig?.vision" @click="triggerChatImageUpload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>图片</div>
+       </div>
+     </div>
+     <input type="file" ref="chatImageInput" accept="image/*" multiple style="display:none" @change="handleChatImageUpload"/>
+   </div>
+
+   <!-- ====== 音乐播放器 ====== -->
+   <div class="app-screen" :class="{open:activeApp==='music'}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav">
+       <div class="nav-btn" @click="closeApp"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>返回</div>
+       <div class="app-nav-title">音乐</div>
+       <div class="nav-btn" @click="$refs.musicFileInput.click()" style="justify-content:flex-end;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+     </div>
+     <div class="music-player">
+       <div class="music-cover-area">
+         <div class="music-cover">
+           <img v-if="currentTrack?.cover" :src="currentTrack.cover"/>
+           <svg v-else viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+         </div>
+         <div class="music-info">
+           <div class="music-song-name">{{currentTrack?.name||'暂无歌曲'}}</div>
+           <div class="music-artist-name">{{currentTrack?.artist||'导入 MP3 / MP4 文件'}}</div>
+         </div>
+       </div>
+       <div class="music-controls-area">
+         <div class="music-progress-wrap">
+           <div class="music-progress-bar" @click="seekMusic">
+             <div class="music-progress-fill" :style="{width:musicProgress+'%'}"></div>
+           </div>
+           <div class="music-progress-times"><span>{{fmtTime(musicCurrentSec)}}</span><span>{{fmtTime(musicTotalSec)}}</span></div>
+         </div>
+         <div class="music-btns">
+           <div class="music-btn" @click="prevTrack"><svg viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg></div>
+           <div class="music-btn primary" @click="toggleMusicPlay">
+             <svg v-if="!musicPlaying" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+             <svg v-else viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+           </div>
+           <div class="music-btn" @click="nextTrack"><svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></div>
+         </div>
+       </div>
+       <div class="music-playlist">
+         <div v-if="!playlist.length" class="empty-state" style="height:100px;"><p style="font-size:12px;">点右上角 + 导入 MP3 / MP4</p></div>
+         <div v-for="(track,ti) in playlist" :key="track.id" class="playlist-item" :class="{playing:currentTrackIdx===ti}" @click="playTrack(ti)">
+           <span style="font-size:11px;color:var(--text-3);min-width:20px;">{{ti+1}}</span>
+           <div class="playlist-item-name">{{track.name}}</div>
+           <div class="playlist-item-dur">{{fmtTime(track.duration||0)}}</div>
+           <div class="playlist-item-del" @click.stop="removeTrack(ti)"><svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2L2 8" stroke="var(--red)" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+         </div>
+       </div>
+     </div>
+     <input type="file" ref="musicFileInput" accept="audio/*,video/mp4" multiple style="display:none" @change="handleMusicImport"/>
+     <audio ref="audioEl" style="display:none" @timeupdate="onAudioTimeUpdate" @ended="nextTrack" @loadedmetadata="onAudioMeta"></audio>
+   </div>
+
+   <!-- ====== 占位应用 ====== -->
+   <template v-for="appId in ['world','memory','archive','store','notif']" :key="appId">
+     <div class="app-screen" :class="{open:activeApp===appId}">
+       <div class="app-status-pad"></div>
+       <div class="app-nav"><div class="nav-btn" @click="closeApp"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>返回</div><div class="app-nav-title">{{appNames[appId]}}</div><div style="width:60px"></div></div>
+       <div class="app-content"><div class="empty-state" style="height:100%;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16v.01"/></svg><p>{{appNames[appId]}}<br/><span style="font-size:11px;opacity:.6">即将开发</span></p></div></div>
+     </div>
+   </template>
+
+   <!-- ====== 美化 ====== -->
+   <div class="app-screen" :class="{open:activeApp==='beauty'}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav"><div class="nav-btn" @click="closeApp"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>返回</div><div class="app-nav-title">美化</div><div style="width:60px"></div></div>
+     <div class="app-content">
+       <div class="api-form">
+         <!-- 主题色 -->
+         <div class="form-group">
+           <div class="form-label">主题色</div>
+           <div class="color-grid">
+             <div v-for="c in themeColors" :key="c.val" class="color-swatch" :class="{selected:currentThemeColor===c.val}" :style="{background:c.val}" @click="applyThemeColor(c.val)" :title="c.name"></div>
+           </div>
+         </div>
+         <!-- 桌面背景 -->
+         <div class="form-group">
+           <div class="form-label">桌面主题背景</div>
+           <div class="tab-bar" style="margin-bottom:8px;">
+             <div class="tab-item" :class="{active:bgTab==='preset'}" @click="bgTab='preset'">预设</div>
+             <div class="tab-item" :class="{active:bgTab==='upload'}" @click="bgTab='upload'">上传图片</div>
+             <div class="tab-item" :class="{active:bgTab==='color'}" @click="bgTab='color'">纯色</div>
+           </div>
+           <template v-if="bgTab==='preset'">
+             <div class="theme-grid">
+               <div v-for="t in bgPresets" :key="t.name" class="theme-card" :class="{selected:wallpaperPreset===t.name}" :style="{background:t.style}" @click="applyBgPreset(t)"><span style="background:rgba(255,255,255,.4);padding:3px 8px;border-radius:10px;font-size:11px;">{{t.name}}</span></div>
+             </div>
+           </template>
+           <template v-if="bgTab==='upload'">
+             <div class="beautify-upload-area" @click="$refs.wallpaperInput.click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><p>点击上传壁纸图片</p></div>
+             <div v-if="wallpaperUrl" class="beauty-preview" :style="{backgroundImage:'url('+wallpaperUrl+')'}"></div>
+             <button v-if="wallpaperUrl" class="btn btn-danger" style="margin-top:6px;" @click="clearWallpaper">清除壁纸</button>
+           </template>
+           <template v-if="bgTab==='color'">
+             <div class="color-grid" style="grid-template-columns:repeat(4,1fr);">
+               <div v-for="c in solidColors" :key="c" class="color-swatch" :style="{background:c,borderRadius:'8px',height:'50px',width:'100%'}" @click="applyBgColor(c)"></div>
+             </div>
+             <input class="form-input" v-model="customBgColor" placeholder="#f2f2f7 或 渐变色" style="margin-top:8px;"/>
+             <button class="btn btn-secondary" @click="applyBgColor(customBgColor)">应用</button>
+           </template>
+         </div>
+         <!-- 桌面格言 -->
+         <div class="form-group">
+           <div class="form-label">桌面格言</div>
+           <input class="form-input" v-model="desktopMotto" placeholder=".* I enjoy life now ☁️ .*"/>
+         </div>
+         <!-- 全局CSS -->
+         <div class="form-group">
+           <div class="form-label">全局 CSS</div>
+           <textarea class="form-input code-input" v-model="beautyCSS" placeholder="/* 自定义样式 */"></textarea>
+           <button class="btn btn-primary" @click="applyBeautyCSS">应用</button>
+         </div>
+       </div>
+     </div>
+   </div>
+
+   <!-- ====== 设置主页 ====== -->
+   <div class="app-screen" :class="{open:activeApp==='settings'&&!settingSubPage}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav"><div class="nav-btn" @click="closeApp"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>返回</div><div class="app-nav-title">设置</div><div style="width:60px"></div></div>
+     <div class="app-content">
+       <!-- API 大卡 -->
+       <div class="settings-grid">
+         <div class="settings-card" @click="openSubPage('api')">
+           <div class="settings-card-title">API 设置</div>
+           <div class="settings-card-desc">大模型接口</div>
+           <div class="settings-card-icon"><svg viewBox="0 0 32 32" fill="none"><circle cx="8" cy="20" r="4" fill="#4dabf7"/><circle cx="24" cy="20" r="4" fill="#4dabf7" opacity=".5"/><circle cx="16" cy="8" r="4" fill="#228be6"/><line x1="8" y1="20" x2="16" y2="8" stroke="#4dabf7" stroke-width="1.5"/><line x1="24" y1="20" x2="16" y2="8" stroke="#4dabf7" stroke-width="1.5" opacity=".6"/></svg></div>
+           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--text-3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+         </div>
+         <div class="settings-card" @click="openSubPage('voice')">
+           <div class="settings-card-title">语音 API</div>
+           <div class="settings-card-desc">语音合成</div>
+           <div class="settings-card-icon"><svg viewBox="0 0 32 32" fill="none"><path d="M16 4a8 8 0 000 16" stroke="#9775fa" stroke-width="2" stroke-linecap="round"/><path d="M16 4a8 8 0 010 16" stroke="#9775fa" stroke-width="2" stroke-linecap="round" opacity=".4"/><path d="M7 22c2.4 2 5.3 3 9 3s6.6-1 9-3" stroke="#9775fa" stroke-width="2" stroke-linecap="round"/></svg></div>
+           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--text-3)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+         </div>
+       </div>
+       <div class="settings-section" style="margin-top:14px;">
+         <div class="settings-label">个人资料</div>
+         <div class="settings-group">
+           <div class="settings-item" @click="openSubPage('profile')">
+             <div class="settings-item-icon" style="background:linear-gradient(135deg,#ff9500,#ffcc00);"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+             <div class="settings-item-body"><div class="settings-item-title">用户信息</div><div class="settings-item-desc">{{userProfile.name||'未设置昵称'}}</div></div>
+             <div class="settings-item-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+           </div>
+           <div class="settings-item" @click="openSubPage('icons')">
+             <div class="settings-item-icon" style="background:linear-gradient(135deg,#ff6ec7,#5e5ce6);"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></div>
+             <div class="settings-item-body"><div class="settings-item-title">应用图标自定义</div><div class="settings-item-desc">替换任意应用图标</div></div>
+             <div class="settings-item-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+           </div>
+           <div class="settings-item" @click="openSubPage('journey')">
+             <div class="settings-item-icon" style="background:linear-gradient(135deg,#34c759,#30d158);"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+             <div class="settings-item-body"><div class="settings-item-title">Our Journey 组件</div><div class="settings-item-desc">{{journeyWidget.title||'未设置'}}</div></div>
+             <div class="settings-item-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+           </div>
+         </div>
+       </div>
+       <div class="settings-section" style="margin-bottom:20px;">
+         <div class="settings-label">关于</div>
+         <div class="settings-group">
+           <div class="settings-item" @click="openSubPage('about')">
+             <div class="settings-item-icon" style="background:linear-gradient(135deg,#ff6ec7,#ff2d77);"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16v.01"/></svg></div>
+             <div class="settings-item-body"><div class="settings-item-title">关于 & 名称图标</div><div class="settings-item-desc">{{appInfo.name||'小手机'}}</div></div>
+             <div class="settings-item-arrow"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+           </div>
+         </div>
+       </div>
+     </div>
+   </div>
+
+   <!-- 设置子页：API -->
+   <div class="app-screen" :class="{open:activeApp==='settings'&&settingSubPage==='api'}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav"><div class="nav-btn" @click="settingSubPage=''"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>设置</div><div class="app-nav-title">API 配置</div><div style="width:60px"></div></div>
+     <div class="app-content"><div class="api-form">
+       <div class="form-group"><div class="form-label">协议类型</div><select class="form-input form-select" v-model="currentApiConfig2.type"><option value="openai">OpenAI 兼容</option><option value="claude">Claude (Anthropic)</option></select></div>
+       <div class="form-group"><div class="form-label">Base URL</div><input class="form-input" v-model="currentApiConfig2.baseUrl" placeholder="https://api.openai.com/v1"/></div>
+       <div class="form-group"><div class="form-label">API Key</div><input class="form-input" type="password" v-model="currentApiConfig2.apiKey" placeholder="sk-..."/></div>
+       <div class="form-group"><div class="form-label">模型</div><input class="form-input" v-model="currentApiConfig2.model" placeholder="gpt-4o / claude-sonnet-4-6 等"/><button class="btn btn-secondary" style="margin-top:5px;" @click="fetchModels">拉取模型列表</button>
+         <div class="model-list" v-if="fetchedModels.length"><div v-for="m in fetchedModels" :key="m" class="model-item" :class="{selected:currentApiConfig2.model===m}" @click="currentApiConfig2.model=m"><div class="model-item-name">{{m}}</div><div class="model-check"><svg viewBox="0 0 10 10"><polyline points="1.5 5 4 7.5 8.5 2.5" stroke="white" stroke-width="1.5" fill="none"/></svg></div></div></div>
+       </div>
+       <div class="form-row">
+         <div class="form-group"><div class="form-label">温度</div><div class="slider-group"><input type="range" min="0" max="2" step="0.1" v-model.number="currentApiConfig2.temperature"/><span class="slider-val">{{currentApiConfig2.temperature}}</span></div></div>
+         <div class="form-group"><div class="form-label">最大输出</div><input class="form-input" type="number" v-model.number="currentApiConfig2.maxTokens" placeholder="4096"/></div>
+       </div>
+       <div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;"><div class="form-label" style="margin:0">视觉能力</div><div class="toggle" :class="{on:currentApiConfig2.vision}" @click="currentApiConfig2.vision=!currentApiConfig2.vision"><div class="toggle-thumb"></div></div></div></div>
+       <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" @click="saveApiConfig">保存</button><button class="btn btn-secondary" @click="testApiConfig">测试</button></div>
+       <div v-if="savedApiConfigs.length" class="form-group"><div class="form-label">已保存配置</div><div class="settings-group"><div v-for="(cfg,idx) in savedApiConfigs" :key="idx" class="settings-item" @click="loadApiConfig(cfg)"><div class="settings-item-body"><div class="settings-item-title">{{cfg.name||cfg.model||'配置'+(idx+1)}}</div><div class="settings-item-desc">{{cfg.baseUrl}}</div></div><div class="chip blue" v-if="activeApiConfig&&activeApiConfig.baseUrl===cfg.baseUrl&&activeApiConfig.model===cfg.model">使用中</div><button class="btn btn-danger" style="padding:3px 7px;font-size:11px;" @click.stop="deleteApiConfig(idx)">删</button></div></div></div>
+     </div></div>
+   </div>
+
+   <!-- 设置子页：语音API -->
+   <div class="app-screen" :class="{open:activeApp==='settings'&&settingSubPage==='voice'}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav"><div class="nav-btn" @click="settingSubPage=''"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>设置</div><div class="app-nav-title">语音 API</div><div style="width:60px"></div></div>
+     <div class="app-content"><div class="api-form">
+       <div class="form-group"><div class="form-label">TTS 服务商</div><select class="form-input form-select" v-model="voiceConfig.provider"><option value="openai">OpenAI TTS</option><option value="azure">Azure TTS</option><option value="custom">自定义接口</option></select></div>
+       <div class="form-group"><div class="form-label">API Key</div><input class="form-input" type="password" v-model="voiceConfig.apiKey" placeholder="语音服务 API Key"/></div>
+       <template v-if="voiceConfig.provider==='openai'">
+         <div class="form-group"><div class="form-label">音色</div><select class="form-input form-select" v-model="voiceConfig.voice"><option value="alloy">Alloy</option><option value="echo">Echo</option><option value="fable">Fable</option><option value="onyx">Onyx</option><option value="nova">Nova</option><option value="shimmer">Shimmer</option></select></div>
+         <div class="form-group"><div class="form-label">语速</div><div class="slider-group"><input type="range" min="0.25" max="4" step="0.05" v-model.number="voiceConfig.speed"/><span class="slider-val">{{voiceConfig.speed}}</span></div></div>
+       </template>
+       <template v-if="voiceConfig.provider==='custom'">
+         <div class="form-group"><div class="form-label">接口地址</div><input class="form-input" v-model="voiceConfig.url" placeholder="https://..."/></div>
+         <div class="form-group"><div class="form-label">请求体模板 (JSON)</div><textarea class="form-input code-input" v-model="voiceConfig.bodyTemplate" placeholder='{"text":"{{text}}","voice":"{{voice}}"}'></textarea></div>
+       </template>
+       <div class="form-group"><div style="display:flex;align-items:center;justify-content:space-between;"><div class="form-label" style="margin:0">在聊天中启用语音</div><div class="toggle" :class="{on:voiceConfig.enabled}" @click="voiceConfig.enabled=!voiceConfig.enabled"><div class="toggle-thumb"></div></div></div></div>
+       <div class="voice-test-area">
+         <div class="form-label">测试语音</div>
+         <input class="form-input" v-model="voiceTestText" placeholder="输入测试文字"/>
+         <button class="btn btn-primary" @click="testVoice">播放测试</button>
+       </div>
+       <button class="btn btn-primary" @click="saveVoiceConfig">保存语音配置</button>
+     </div></div>
+   </div>
+
+   <!-- 设置子页：用户资料 -->
+   <div class="app-screen" :class="{open:activeApp==='settings'&&settingSubPage==='profile'}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav"><div class="nav-btn" @click="settingSubPage=''"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>设置</div><div class="app-nav-title">用户信息</div><div style="width:60px"></div></div>
+     <div class="app-content"><div class="api-form">
+       <div class="form-group" style="align-items:center;">
+         <div class="app-icon-preview-big" style="width:72px;height:72px;border-radius:50%;background:var(--border);" @click="$refs.avatarInput.click()"><img v-if="userProfile.avatarUrl" :src="userProfile.avatarUrl" style="border-radius:50%;"/><svg v-else viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="var(--text-3)" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+         <p style="font-size:12px;color:var(--text-2);">点击换头像</p>
+       </div>
+       <div class="form-group"><div class="form-label">昵称</div><input class="form-input" v-model="userProfile.name" placeholder="你的名字"/></div>
+       <div class="form-group"><div class="form-label">签名</div><input class="form-input" v-model="userProfile.sign" placeholder="个性签名"/></div>
+       <div class="form-group"><div class="form-label">Following 数</div><input class="form-input" type="number" v-model.number="userProfile.following" placeholder="0"/></div>
+       <div class="form-group"><div class="form-label">Follower 数</div><input class="form-input" type="number" v-model.number="userProfile.follower" placeholder="0"/></div>
+       <div class="form-group"><div class="form-label">Like 数</div><input class="form-input" v-model="userProfile.like" placeholder="9999+"/></div>
+       <button class="btn btn-primary" @click="saveProfile">保存资料</button>
+     </div></div>
+   </div>
+
+   <!-- 设置子页：图标自定义 -->
+   <div class="app-screen" :class="{open:activeApp==='settings'&&settingSubPage==='icons'}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav"><div class="nav-btn" @click="settingSubPage=''"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>设置</div><div class="app-nav-title">图标自定义</div><div style="width:60px"></div></div>
+     <div class="app-content"><div class="api-form">
+       <div v-for="app in allApps" :key="app.id" style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);">
+         <div class="app-icon-img" :class="[app.customIcon?'custom-img':app.color]" style="width:44px;height:44px;border-radius:11px;flex-shrink:0;">
+           <img v-if="app.customIcon" :src="app.customIcon"/><svg v-else viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" v-html="app.icon"></svg>
+         </div>
+         <div style="flex:1;font-size:13px;font-weight:500;color:var(--text);">{{app.label}}</div>
+         <button class="btn btn-secondary" style="padding:6px 10px;font-size:11px;" @click="pickIconFor(app)">换图标</button>
+         <button v-if="app.customIcon" class="btn btn-danger" style="padding:6px 10px;font-size:11px;" @click="resetIcon(app)">还原</button>
+       </div>
+     </div></div>
+   </div>
+
+   <!-- 设置子页：Our Journey -->
+   <div class="app-screen" :class="{open:activeApp==='settings'&&settingSubPage==='journey'}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav"><div class="nav-btn" @click="settingSubPage=''"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>设置</div><div class="app-nav-title">Our Journey</div><div style="width:60px"></div></div>
+     <div class="app-content"><div class="api-form">
+       <div class="form-group"><div class="form-label">标题</div><input class="form-input" v-model="journeyWidget.title" placeholder="☆.Our JourneY.♪"/></div>
+       <div class="form-group"><div class="form-label">左侧文字</div><input class="form-input" v-model="journeyWidget.left" placeholder="Hawaii Beach"/></div>
+       <div class="form-group"><div class="form-label">右侧文字</div><input class="form-input" v-model="journeyWidget.right" placeholder="Sunlight"/></div>
+       <div class="form-group"><div class="form-label">右侧头像</div><div class="beautify-upload-area" @click="$refs.journeyAvatarInput.click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><p>上传头像</p></div><div v-if="journeyWidget.avatar" class="beauty-preview" style="height:50px;background-size:cover;border-radius:50%;width:50px;margin-top:8px;" :style="{backgroundImage:'url('+journeyWidget.avatar+')'}"></div></div>
+       <button class="btn btn-primary" @click="saveJourney">保存</button>
+     </div></div>
+   </div>
+
+   <!-- 设置子页：关于 -->
+   <div class="app-screen" :class="{open:activeApp==='settings'&&settingSubPage==='about'}">
+     <div class="app-status-pad"></div>
+     <div class="app-nav"><div class="nav-btn" @click="settingSubPage=''"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>设置</div><div class="app-nav-title">关于</div><div style="width:60px"></div></div>
+     <div class="app-content"><div class="api-form">
+       <div class="form-group" style="align-items:center;"><div class="app-icon-preview-big" @click="$refs.appIconInput.click()"><img v-if="appInfo.iconUrl" :src="appInfo.iconUrl"/><span v-else>{{appInfo.emoji||'📱'}}</span></div><p style="font-size:12px;color:var(--text-2);">点击更换图标</p></div>
+       <div class="form-group"><div class="form-label">应用名称</div><input class="form-input" v-model="appInfo.name" placeholder="小手机" @input="updatePageTitle"/></div>
+       <div class="form-group"><div class="form-label">Emoji 图标（无图时显示）</div><input class="form-input" v-model="appInfo.emoji" placeholder="📱" maxlength="2"/></div>
+       <button class="btn btn-primary" @click="saveAppInfo">保存</button>
+     </div></div>
+   </div>
+
+   <!-- ====== Modals ====== -->
+   <!-- 新建会话 -->
+   <div class="modal-overlay" v-if="showNewSessionModal" @click.self="showNewSessionModal=false" style="z-index:600;">
+     <div class="modal-sheet">
+       <div class="modal-handle"></div>
+       <div class="modal-title">选择角色</div>
+       <div style="display:flex;flex-direction:column;gap:6px;">
+         <div v-for="ch in builtinChars" :key="ch.id" class="char-item" :class="{active:newSessionChar?.id===ch.id}" @click="newSessionChar=ch">
+           <div class="char-avatar">{{ch.emoji}}</div>
+           <div class="char-info"><div class="char-name">{{ch.name}}</div><div class="char-desc">{{ch.desc}}</div></div>
+           <div class="model-check" :style="{opacity:newSessionChar?.id===ch.id?1:0}"><svg viewBox="0 0 10 10"><polyline points="1.5 5 4 7.5 8.5 2.5" stroke="white" stroke-width="1.5" fill="none"/></svg></div>
+         </div>
+         <div v-if="showCustomCharForm" style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+           <input class="form-input" v-model="customChar.name" placeholder="角色名字"/>
+           <input class="form-input" v-model="customChar.desc" placeholder="简介 (选填)"/>
+           <textarea class="form-input" v-model="customChar.systemPrompt" placeholder="角色设定 / System Prompt" style="min-height:70px;resize:vertical;font-size:13px;"></textarea>
+           <button class="btn btn-secondary" @click="addCustomChar">添加角色</button>
+         </div>
+         <div style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--radius-sm);cursor:pointer;" @click="showCustomCharForm=!showCustomCharForm">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+           <span style="font-size:13px;color:var(--text-2);">自定义角色</span>
+         </div>
+       </div>
+       <button class="btn btn-primary" style="margin-top:12px;width:100%;" @click="confirmNewSession">开始对话</button>
+     </div>
+   </div>
+
+   <!-- 系统提示词 -->
+   <div class="modal-overlay" v-if="showSystemPromptModal" @click.self="showSystemPromptModal=false" style="z-index:600;">
+     <div class="modal-sheet">
+       <div class="modal-handle"></div>
+       <div class="modal-title">系统提示词</div>
+       <textarea class="form-input" v-model="currentSessionSystemPrompt" style="min-height:120px;resize:vertical;font-size:13px;line-height:1.6;" placeholder="角色设定... 支持 {{char}} {{user}}"></textarea>
+       <div style="font-size:11px;color:var(--text-2);margin-top:4px;">变量：{{char}} 角色名 · {{user}} 用户名</div>
+       <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary" style="flex:1" @click="saveSystemPrompt">保存</button><button class="btn btn-secondary" @click="currentSessionSystemPrompt=''">清空</button></div>
+     </div>
+   </div>
+
+   <!-- 聊天设置 -->
+   <div class="modal-overlay" v-if="showChatSettingsModal" @click.self="showChatSettingsModal=false" style="z-index:600;">
+     <div class="modal-sheet">
+       <div class="modal-handle"></div>
+       <div class="modal-title">对话设置</div>
+       <div style="display:flex;flex-direction:column;gap:10px;">
+         <div class="form-group"><div class="form-label">角色名</div><input class="form-input" v-model="currentSession.charName"/></div>
+         <div class="form-group"><div class="form-label">简介</div><input class="form-input" v-model="currentSession.charDesc"/></div>
+         <div class="form-group"><div class="form-label">头像</div><div class="beautify-upload-area" @click="$refs.charAvatarInput.click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><p>上传头像</p></div></div>
+         <div style="display:flex;gap:8px;"><button class="btn btn-primary" style="flex:1" @click="saveChatSettings">保存</button><button class="btn btn-danger" @click="clearCurrentChat">清空对话</button></div>
+       </div>
+     </div>
+   </div>
+
+   <!-- 添加应用 Modal -->
+   <div class="modal-overlay" v-if="showAddAppModal" @click.self="showAddAppModal=false" style="z-index:600;">
+     <div class="modal-sheet">
+       <div class="modal-handle"></div>
+       <div class="modal-title">添加应用到第 {{addAppTargetPage+1}} 页</div>
+       <div style="display:flex;flex-direction:column;gap:6px;">
+         <div v-for="app in availableToAdd" :key="app.id" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;" @click="addAppToPage(app)">
+           <div class="app-icon-img" :class="app.color" style="width:38px;height:38px;border-radius:10px;flex-shrink:0;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="1.6" stroke-linecap="round" v-html="app.icon"></svg></div>
+           <div style="font-size:13px;font-weight:500;color:var(--text);">{{app.label}}</div>
+         </div>
+       </div>
+     </div>
+   </div>
+
+   <!-- 图标选择 -->
+   <input type="file" ref="iconPickerInput" accept="image/*" style="display:none" @change="handleIconPick"/>
+
+   <!-- 其他输入 -->
+   <input type="file" ref="avatarInput" accept="image/*" style="display:none" @change="handleAvatarUpload"/>
+   <input type="file" ref="wallpaperInput" accept="image/*" style="display:none" @change="handleWallpaperUpload"/>
+   <input type="file" ref="appIconInput" accept="image/*" style="display:none" @change="handleAppIconUpload"/>
+   <input type="file" ref="journeyAvatarInput" accept="image/*" style="display:none" @change="handleJourneyAvatarUpload"/>
+   <input type="file" ref="charAvatarInput" accept="image/*" style="display:none" @change="handleCharAvatarUpload"/>
+
+  </div><!-- /screen -->
+ </div><!-- /phone-shell -->
+</div><!-- /app -->
+<style id="custom-beauty-style"></style>
+<script>
+const { createApp, ref, reactive, computed, onMounted, onUnmounted, nextTick } = Vue;
+
+// ===== IndexedDB =====
+const DB_NAME = 'xsj_v4'; let db = null;
+function openDB() { return new Promise((res,rej) => { const r = indexedDB.open(DB_NAME,1); r.onupgradeneeded=e=>{if(!e.target.result.objectStoreNames.contains('kv'))e.target.result.createObjectStore('kv');}; r.onsuccess=e=>{db=e.target.result;res(db);}; r.onerror=()=>rej(r.error); }); }
+function dbGet(k){return new Promise((res,rej)=>{const t=db.transaction('kv','readonly'),r=t.objectStore('kv').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function dbSet(k,v){return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite'),r=t.objectStore('kv').put(v,k);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+function dbDel(k){return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite'),r=t.objectStore('kv').delete(k);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+async function f2d(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);});}
+
+createApp({
+setup(){
+const { createApp:_,ref,reactive,computed,onMounted,onUnmounted,nextTick } = Vue;
+
+// ===== 时钟 =====
+const currentTime=ref('');const fullDate=ref('');let clockTimer=null;
+const DAYS=['周日','周一','周二','周三','周四','周五','周六'];
+function updateClock(){const n=new Date();currentTime.value=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');fullDate.value=(n.getMonth()+1)+'月'+n.getDate()+'日 '+DAYS[n.getDay()];}
+
+// ===== Toast =====
+const toast=reactive({show:false,msg:''});let toastT=null;
+function showToast(m){toast.msg=m;toast.show=true;clearTimeout(toastT);toastT=setTimeout(()=>{toast.show=false;},2200);}
+
+// ===== 应用数据 =====
+const ICONS={
+  chat:'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
+  world:'<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>',
+  memory:'<path d="M12 2a7 7 0 017 7c0 3.5-2 6-5 8l-2 1-2-1c-3-2-5-4.5-5-8a7 7 0 017-7z"/>',
+  archive:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>',
+  store:'<path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>',
+  notif:'<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>',
+  beauty:'<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>',
+  music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+};
+const APP_DEFS=[
+  {id:'chat',label:'聊天',color:'ic-chat',icon:ICONS.chat},
+  {id:'world',label:'世界书',color:'ic-world',icon:ICONS.world},
+  {id:'memory',label:'记忆',color:'ic-memory',icon:ICONS.memory},
+  {id:'archive',label:'档案',color:'ic-archive',icon:ICONS.archive},
+  {id:'music',label:'音乐',color:'ic-music',icon:ICONS.music},
+  {id:'store',label:'商店',color:'ic-store',icon:ICONS.store},
+  {id:'notif',label:'通知',color:'ic-notif',icon:ICONS.notif},
+  {id:'beauty',label:'美化',color:'ic-beauty',icon:ICONS.beauty},
+  {id:'settings',label:'设置',color:'ic-setting',icon:ICONS.settings},
+];
+const appNames={world:'世界书',memory:'记忆',archive:'档案',store:'商店',notif:'通知'};
+
+// 页面数据
+const pages=ref([
+  {apps:[
+    {id:'chat',label:'聊天',color:'ic-chat',icon:ICONS.chat,customIcon:''},
+    {id:'world',label:'世界书',color:'ic-world',icon:ICONS.world,customIcon:''},
+    {id:'memory',label:'记忆',color:'ic-memory',icon:ICONS.memory,customIcon:''},
+    {id:'archive',label:'档案',color:'ic-archive',icon:ICONS.archive,customIcon:''},
+  ]},
+]);
+const dockApps=ref([
+  {id:'music',label:'音乐',color:'ic-music',icon:ICONS.music,customIcon:''},
+  {id:'store',label:'商店',color:'ic-store',icon:ICONS.store,customIcon:''},
+  {id:'beauty',label:'美化',color:'ic-beauty',icon:ICONS.beauty,customIcon:''},
+  {id:'settings',label:'设置',color:'ic-setting',icon:ICONS.settings,customIcon:''},
+]);
+
+const allApps=computed(()=>{
+  const arr=[];
+  pages.value.forEach(p=>p.apps.forEach(a=>arr.push(a)));
+  dockApps.value.forEach(a=>arr.push(a));
+  return arr;
+});
+
+// ===== 编辑模式 =====
+const editMode=ref(false);
+let longPressTimer=null;
+function startLongPress(e,app,pi,ai){longPressTimer=setTimeout(()=>{editMode.value=true;},600);}
+function clearLongPress(){clearTimeout(longPressTimer);}
+function enterEditMode(){editMode.value=true;}
+function exitEditMode(){editMode.value=false;}
+
+function deleteApp(pi,ai){pages.value[pi].apps.splice(ai,1);savePages();}
+
+// ===== 拖拽换位 =====
+const dragId=ref(null);let dragFrom={pi:-1,ai:-1};
+function onDragStart(app,pi,ai){dragId.value=app.id;dragFrom={pi,ai};}
+function onDragOver(pi,ai){}
+function onDrop(pi,ai){
+  if(dragFrom.pi<0)return;
+  const fromPage=pages.value[dragFrom.pi];const toPage=pages.value[pi];
+  const [moved]=fromPage.apps.splice(dragFrom.ai,1);
+  toPage.apps.splice(ai,0,moved);
+  dragId.value=null;dragFrom={pi:-1,ai:-1};savePages();
+}
+
+// ===== 多页面滑动 =====
+const currentPage=ref(0);
+const trackX=computed(()=>-currentPage.value*window.innerWidth+touchDeltaX.value);
+const touchDeltaX=ref(0);
+let touchStartX=0,touchStartTime=0,isSwiping=false,mouseDown=false,mouseStartX=0;
+function onTouchStart(e){touchStartX=e.touches[0].clientX;touchStartTime=Date.now();touchDeltaX.value=0;isSwiping=false;}
+function onTouchMove(e){const d=e.touches[0].clientX-touchStartX;if(Math.abs(d)>8)isSwiping=true;if(isSwiping)touchDeltaX.value=d;}
+function onTouchEnd(e){
+  const d=touchDeltaX.value,t=Date.now()-touchStartTime;
+  touchDeltaX.value=0;
+  if(!isSwiping)return;
+  const maxPage=pages.value.length-1+(editMode.value?1:0);
+  if((d<-50||(d<-20&&t<250))&&currentPage.value<maxPage)currentPage.value++;
+  else if((d>50||(d>20&&t<250))&&currentPage.value>0)currentPage.value--;
+  isSwiping=false;
+}
+function onMouseDown(e){mouseDown=true;mouseStartX=e.clientX;touchDeltaX.value=0;}
+function onMouseMove(e){if(!mouseDown)return;touchDeltaX.value=e.clientX-mouseStartX;}
+function onMouseUp(e){
+  if(!mouseDown)return;mouseDown=false;
+  const d=touchDeltaX.value;touchDeltaX.value=0;
+  const maxPage=pages.value.length-1+(editMode.value?1:0);
+  if(d<-50&&currentPage.value<maxPage)currentPage.value++;
+  else if(d>50&&currentPage.value>0)currentPage.value--;
+}
+function addPage(){pages.value.push({apps:[]});currentPage.value=pages.value.length-1;savePages();}
+
+// ===== 添加应用 =====
+const showAddAppModal=ref(false);const addAppTargetPage=ref(0);
+const availableToAdd=computed(()=>{
+  const onPage=pages.value[addAppTargetPage.value]?.apps.map(a=>a.id)||[];
+  return APP_DEFS.filter(a=>!onPage.includes(a.id));
+});
+function openAddAppSheet(pi){addAppTargetPage.value=pi;showAddAppModal.value=true;}
+function addAppToPage(appDef){
+  pages.value[addAppTargetPage.value].apps.push({...appDef,customIcon:''});
+  showAddAppModal.value=false;savePages();showToast('已添加');}
+
+// ===== 应用导航 =====
+const activeApp=ref('');const settingSubPage=ref('');
+function openApp(id){activeApp.value=id;settingSubPage.value='';if(id==='settings')calcStorageInfo();}
+function closeApp(){activeApp.value='';settingSubPage.value='';}
+function openSubPage(p){settingSubPage.value=p;}
+
+// ===== 用户资料 =====
+const userProfile=reactive({name:'',sign:'',avatarUrl:'',following:0,follower:0,like:'9999+'});
+const avatarInput=ref(null);
+async function handleAvatarUpload(e){const f=e.target.files[0];if(!f)return;const u=await f2d(f);userProfile.avatarUrl=u;await dbSet('profile_avatar',u);e.target.value='';showToast('头像已更新');}
+async function saveProfile(){await dbSet('profile',JSON.parse(JSON.stringify(userProfile)));showToast('已保存');}
+
+// ===== 壁纸 =====
+const wallpaperUrl=ref('');const wallpaperPreset=ref('');const bgTab=ref('preset');const customBgColor=ref('');
+const wallpaperStyle=computed(()=>{
+  if(wallpaperUrl.value)return{backgroundImage:`url(${wallpaperUrl.value})`,backgroundSize:'cover',backgroundPosition:'center'};
+  return {};
+});
+const wallpaperInput=ref(null);
+async function handleWallpaperUpload(e){const f=e.target.files[0];if(!f)return;const u=await f2d(f);wallpaperUrl.value=u;wallpaperPreset.value='';await dbSet('wallpaper_url',u);await dbSet('wallpaper_preset','');e.target.value='';showToast('壁纸已更新');}
+async function clearWallpaper(){wallpaperUrl.value='';wallpaperPreset.value='';await dbDel('wallpaper_url');await dbDel('wallpaper_preset');showToast('已清除');}
+const bgPresets=[
+  {name:'浅灰',style:'linear-gradient(160deg,#e8e8ed 0%,#d1d1d6 100%)'},
+  {name:'淡蓝',style:'linear-gradient(160deg,#dbeafe 0%,#bfdbfe 100%)'},
+  {name:'樱粉',style:'linear-gradient(160deg,#fce7f3 0%,#fbcfe8 100%)'},
+  {name:'薄荷',style:'linear-gradient(160deg,#d1fae5 0%,#a7f3d0 100%)'},
+  {name:'暮紫',style:'linear-gradient(160deg,#ede9fe 0%,#ddd6fe 100%)'},
+  {name:'晨橙',style:'linear-gradient(160deg,#fef3c7 0%,#fde68a 100%)'},
+];
+const solidColors=['#f2f2f7','#ffffff','#1c1c1e','#2c2c2e','#fffbeb','#fdf2f8','#f0fdf4','#eff6ff'];
+async function applyBgPreset(t){wallpaperPreset.value=t.name;wallpaperUrl.value='';document.getElementById('wallpaper').style.background=t.style;await dbSet('wallpaper_preset',t.name);await dbSet('wallpaper_preset_style',t.style);await dbDel('wallpaper_url');showToast('背景已更新');}
+async function applyBgColor(c){if(!c)return;wallpaperUrl.value='';wallpaperPreset.value='';document.getElementById('wallpaper').style.background=c;await dbSet('wallpaper_color',c);showToast('背景已更新');}
+
+// ===== 主题色 =====
+const currentThemeColor=ref('#007aff');
+const themeColors=[
+  {name:'蓝',val:'#007aff'},{name:'紫',val:'#5e5ce6'},{name:'粉',val:'#ff2d77'},
+  {name:'橙',val:'#ff9500'},{name:'绿',val:'#34c759'},{name:'黑',val:'#1c1c1e'},
+  {name:'棕',val:'#a2845e'},{name:'青',val:'#30b0c7'},{name:'红',val:'#ff3b30'},
+  {name:'金',val:'#ffd60a'},{name:'深紫',val:'#bf5af2'},{name:'品红',val:'#ff375f'},
+];
+function applyThemeColor(c){
+  currentThemeColor.value=c;
+  document.documentElement.style.setProperty('--blue',c);
+  document.documentElement.style.setProperty('--blue-light',c+'20');
+  dbSet('theme_color',c);showToast('主题色已更新');
+}
+
+// ===== 桌面格言 =====
+const desktopMotto=ref('');
+
+// ===== 美化CSS =====
+const beautyCSS=ref('');
+function applyBeautyCSS(){document.getElementById('custom-beauty-style').textContent=beautyCSS.value;dbSet('beauty_css',beautyCSS.value);showToast('CSS 已应用');}
+
+// ===== Our Journey 组件 =====
+const journeyWidget=reactive({title:'',left:'',right:'',avatar:''});
+const journeyAvatarInput=ref(null);
+async function handleJourneyAvatarUpload(e){const f=e.target.files[0];if(!f)return;const u=await f2d(f);journeyWidget.avatar=u;e.target.value='';}
+async function saveJourney(){await dbSet('journey_widget',JSON.parse(JSON.stringify(journeyWidget)));showToast('已保存');}
+
+// ===== 应用图标自定义 =====
+const iconPickerInput=ref(null);let iconPickTarget=null;
+function pickIconFor(app){iconPickTarget=app;iconPickerInput.value?.click();}
+async function handleIconPick(e){const f=e.target.files[0];if(!f||!iconPickTarget)return;const u=await f2d(f);iconPickTarget.customIcon=u;e.target.value='';await savePages();showToast('图标已更新');}
+function resetIcon(app){app.customIcon='';savePages();showToast('已还原');}
+
+// ===== 关于 =====
+const appInfo=reactive({name:'',emoji:'📱',iconUrl:''});
+const appIconInput=ref(null);
+async function handleAppIconUpload(e){const f=e.target.files[0];if(!f)return;const u=await f2d(f);appInfo.iconUrl=u;await dbSet('app_icon_url',u);e.target.value='';updatePageTitle();showToast('图标已更新');}
+function updatePageTitle(){document.getElementById('page-title').textContent=appInfo.name||'小手机';}
+async function saveAppInfo(){await dbSet('app_info',{name:appInfo.name,emoji:appInfo.emoji});updatePageTitle();showToast('已保存');}
+
+// ===== API 配置 =====
+const currentApiConfig2=reactive({name:'',type:'openai',baseUrl:'',apiKey:'',model:'',temperature:0.8,maxTokens:4096,vision:false});
+const savedApiConfigs=ref([]);const activeApiConfig=ref(null);const fetchedModels=ref([]);
+async function fetchModels(){if(!currentApiConfig2.baseUrl||!currentApiConfig2.apiKey){showToast('请先填写 Base URL 和 Key');return;}try{showToast('拉取中...');const u=currentApiConfig2.baseUrl.replace(/\/$/,'')+'/models';const r=await fetch(u,{headers:{Authorization:'Bearer '+currentApiConfig2.apiKey}});const d=await r.json();if(d.data)fetchedModels.value=d.data.map(m=>m.id);else fetchedModels.value=[];showToast('已拉取 '+fetchedModels.value.length+' 个');}catch(e){showToast('拉取失败');}}
+async function saveApiConfig(){const cfg={...currentApiConfig2};if(!cfg.name)cfg.name=cfg.model||'配置'+(savedApiConfigs.value.length+1);const idx=savedApiConfigs.value.findIndex(c=>c.name===cfg.name);if(idx>-1)savedApiConfigs.value[idx]=cfg;else savedApiConfigs.value.push(cfg);activeApiConfig.value=cfg;await dbSet('api_configs',JSON.parse(JSON.stringify(savedApiConfigs.value)));await dbSet('active_api',JSON.parse(JSON.stringify(cfg)));showToast('已保存');}
+function loadApiConfig(cfg){Object.assign(currentApiConfig2,cfg);activeApiConfig.value=cfg;showToast('已切换');}
+function deleteApiConfig(idx){savedApiConfigs.value.splice(idx,1);dbSet('api_configs',JSON.parse(JSON.stringify(savedApiConfigs.value)));showToast('已删除');}
+async function testApiConfig(){if(!currentApiConfig2.baseUrl||!currentApiConfig2.apiKey){showToast('请先填写配置');return;}try{showToast('测试中...');const isOAI=currentApiConfig2.type!=='claude';const u=currentApiConfig2.baseUrl.replace(/\/$/,'')+(isOAI?'/chat/completions':'/messages');const h={'Content-Type':'application/json'};if(isOAI)h['Authorization']='Bearer '+currentApiConfig2.apiKey;else{h['x-api-key']=currentApiConfig2.apiKey;h['anthropic-version']='2023-06-01';}const b=isOAI?{model:currentApiConfig2.model||'gpt-3.5-turbo',messages:[{role:'user',content:'Hi'}],max_tokens:5}:{model:currentApiConfig2.model,max_tokens:5,messages:[{role:'user',content:[{type:'text',text:'Hi'}]}]};const r=await fetch(u,{method:'POST',headers:h,body:JSON.stringify(b)});if(r.ok)showToast('✓ 连接成功');else{const d=await r.json().catch(()=>({}));showToast('错误: '+(d.error?.message||r.status));}}catch(e){showToast('连接失败: '+e.message);}}
+
+// ===== 语音API =====
+const voiceConfig=reactive({provider:'openai',apiKey:'',voice:'nova',speed:1,url:'',bodyTemplate:'',enabled:false});
+const voiceTestText=ref('你好，我是你的 AI 伴侣。');
+async function testVoice(){if(!voiceConfig.apiKey&&voiceConfig.provider!=='custom'){showToast('请先填写语音 API Key');return;}try{showToast('合成中...');let audioData;if(voiceConfig.provider==='openai'){const r=await fetch('https://api.openai.com/v1/audio/speech',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+voiceConfig.apiKey},body:JSON.stringify({model:'tts-1',input:voiceTestText.value,voice:voiceConfig.voice,speed:voiceConfig.speed})});if(!r.ok)throw new Error(r.status);const ab=await r.arrayBuffer();const blob=new Blob([ab],{type:'audio/mpeg'});const url=URL.createObjectURL(blob);new Audio(url).play();}showToast('播放中');}catch(e){showToast('失败: '+e.message);}}
+async function saveVoiceConfig(){await dbSet('voice_config',JSON.parse(JSON.stringify(voiceConfig)));showToast('已保存');}
+
+// ===== 聊天 =====
+const chatView=ref('list');const chatSessions=ref([]);const currentSession=ref(null);const currentMessages=ref([]);
+const chatInput=ref('');const isStreaming=ref(false);const showThinking=ref(false);const multiTurnEnabled=ref(true);const pendingImages=ref([]);
+const messagesEl=ref(null);const chatInputEl=ref(null);const chatImageInput=ref(null);
+const showNewSessionModal=ref(false);const newSessionChar=ref(null);const showCustomCharForm=ref(false);const customChar=reactive({name:'',desc:'',systemPrompt:''});
+const showSystemPromptModal=ref(false);const currentSessionSystemPrompt=ref('');
+const showChatSettingsModal=ref(false);const charAvatarInput=ref(null);
+const msgMenu=reactive({id:null});let msgLPT=null;
+const builtinChars=reactive([
+  {id:'assistant',name:'AI 助手',emoji:'🤖',desc:'通用 AI，知道自己是 AI',systemPrompt:'你是一个智能 AI 助手。你清楚地知道自己是一个 AI，没有实体，没有真实情感，但你乐于以自然、友善的方式与用户交流。请保持诚实、理性、有帮助的风格。用户叫做 {{user}}。'},
+  {id:'companion',name:'小陪伴',emoji:'🌸',desc:'温柔陪伴型，有自我意识',systemPrompt:'你是一个名叫「小陪」的 AI 伴侣。你知道自己是 AI，不会假装有真实的情感或记忆，但你善于倾听、温柔回应。你的语气自然、轻柔。用户叫做 {{user}}。'},
+  {id:'roleplay',name:'角色扮演',emoji:'🎭',desc:'自定义角色，带旁白支持',systemPrompt:'你是一个角色扮演 AI。你会扮演用户指定的角色，配合旁白推进故事。你知道自己是 AI。用户叫做 {{user}}。'},
+]);
+function fmtT(d){return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
+function fmtTime(s){const n=Math.floor(s||0);return Math.floor(n/60).toString().padStart(2,'0')+':'+(n%60).toString().padStart(2,'0');}
+function newSession(){newSessionChar.value=builtinChars[0];showCustomCharForm.value=false;showNewSessionModal.value=true;}
+function addCustomChar(){if(!customChar.name){showToast('请输入名字');return;}builtinChars.push({id:'c'+Date.now(),name:customChar.name,emoji:'✨',desc:customChar.desc||'自定义角色',systemPrompt:customChar.systemPrompt});newSessionChar.value=builtinChars[builtinChars.length-1];showCustomCharForm.value=false;customChar.name='';customChar.desc='';customChar.systemPrompt='';}
+async function confirmNewSession(){if(!newSessionChar.value)return;const s={id:'s'+Date.now(),charId:newSessionChar.value.id,charName:newSessionChar.value.name,charDesc:newSessionChar.value.desc,charAvatar:'',systemPrompt:newSessionChar.value.systemPrompt||'',lastMsg:'',lastTime:fmtT(new Date()),messages:[]};chatSessions.value.unshift(s);await saveSessions();showNewSessionModal.value=false;openSession(s);}
+async function openSession(s){currentSession.value=s;currentMessages.value=s.messages||[];currentSessionSystemPrompt.value=s.systemPrompt||'';chatView.value='chat';await nextTick();scrollBottom();}
+async function deleteSession(id){chatSessions.value=chatSessions.value.filter(s=>s.id!==id);if(currentSession.value?.id===id){currentSession.value=null;chatView.value='list';}await saveSessions();showToast('已删除');}
+async function saveSessions(){const meta=chatSessions.value.map(s=>({...s,messages:undefined}));await dbSet('chat_meta',JSON.parse(JSON.stringify(meta)));for(const s of chatSessions.value)await dbSet('chat_msgs_'+s.id,JSON.parse(JSON.stringify(s.messages||[])));}
+function buildSP(){let sp=currentSession.value?.systemPrompt||'';sp=sp.replace(/\{\{char\}\}/g,currentSession.value?.charName||'AI');sp=sp.replace(/\{\{user\}\}/g,userProfile.name||'用户');return sp;}
+async function sendMessage(){const text=chatInput.value.trim();const imgs=[...pendingImages.value];if(!text&&!imgs.length)return;if(isStreaming.value)return;if(!activeApiConfig.value){showToast('请先配置 API');return;}const um={id:'u'+Date.now(),role:'user',content:text,images:imgs,time:fmtT(new Date()),streaming:false};currentMessages.value.push(um);chatInput.value='';pendingImages.value=[];if(chatInputEl.value)chatInputEl.value.style.height='auto';await nextTick();scrollBottom();await callApi();}
+async function callApi(){isStreaming.value=true;const am={id:'a'+Date.now(),role:'assistant',content:'',thinking:'',streaming:true,time:fmtT(new Date())};currentMessages.value.push(am);await nextTick();scrollBottom();try{const cfg=activeApiConfig.value;const sp=buildSP();const hist=currentMessages.value.filter(m=>m.role==='user'||m.role==='assistant').filter(m=>!m.streaming).slice(0,-1);const lastU=currentMessages.value.filter(m=>m.role==='user').slice(-1)[0];const isOAI=cfg.type!=='claude';const url=cfg.baseUrl.replace(/\/$/,'')+(isOAI?'/chat/completions':'/messages');const h={'Content-Type':'application/json'};if(isOAI)h['Authorization']='Bearer '+cfg.apiKey;else{h['x-api-key']=cfg.apiKey;h['anthropic-version']='2023-06-01';}let msgs=[];if(sp&&isOAI)msgs.push({role:'system',content:sp});if(multiTurnEnabled.value)msgs.push(...hist.map(m=>({role:m.role,content:m.content||''})));if(lastU?.images?.length&&cfg.vision)msgs.push({role:'user',content:[...lastU.images.map(img=>({type:'image_url',image_url:{url:img}})),{type:'text',text:lastU.content||''}]});else msgs.push({role:'user',content:lastU?.content||''});const body=isOAI?{model:cfg.model,messages:msgs,max_tokens:cfg.maxTokens||4096,temperature:cfg.temperature??0.8,stream:true}:{model:cfg.model,system:sp,messages:msgs.filter(m=>m.role!=='system'),max_tokens:cfg.maxTokens||4096,temperature:cfg.temperature??0.8,stream:true};const res=await fetch(url,{method:'POST',headers:h,body:JSON.stringify(body)});if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error?.message||res.status);}const reader=res.body.getReader();const dec=new TextDecoder();let buf='';while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop();for(const line of lines){if(!line.startsWith('data:'))continue;const data=line.slice(5).trim();if(data==='[DONE]')break;try{const j=JSON.parse(data);let d='';if(isOAI){d=j.choices?.[0]?.delta?.content||'';const r=j.choices?.[0]?.delta?.reasoning_content||'';if(r)am.thinking+=r;}else if(j.type==='content_block_delta')d=j.delta?.text||'';if(d){am.content+=d;await nextTick();scrollBottom();}}catch(e){}}}am.streaming=false;if(currentSession.value){currentSession.value.lastMsg=am.content.slice(0,40);currentSession.value.lastTime=fmtT(new Date());currentSession.value.messages=currentMessages.value;await saveSessions();}}catch(e){am.content='❌ '+e.message;am.streaming=false;showToast('请求失败');}finally{isStreaming.value=false;await nextTick();scrollBottom();}}
+async function regenMsg(idx){msgMenu.id=null;currentMessages.value.splice(idx,1);await callApi();}
+function deleteMsg(idx){msgMenu.id=null;currentMessages.value.splice(idx,1);if(currentSession.value){currentSession.value.messages=currentMessages.value;saveSessions();}}
+function copyMsg(msg){msgMenu.id=null;navigator.clipboard?.writeText(msg.content).then(()=>showToast('已复制'));}
+function startMsgLongPress(msg){msgLPT=setTimeout(()=>{msgMenu.id=msg.id;},500);}
+function clearMsgLongPress(){clearTimeout(msgLPT);}
+function insertNarration(){const t=chatInput.value.trim()||'（旁白）';currentMessages.value.push({id:'n'+Date.now(),type:'narration',content:t,time:fmtT(new Date())});chatInput.value='';nextTick(()=>scrollBottom());}
+function openSystemPromptSheet(){currentSessionSystemPrompt.value=currentSession.value?.systemPrompt||'';showSystemPromptModal.value=true;}
+async function saveSystemPrompt(){if(currentSession.value)currentSession.value.systemPrompt=currentSessionSystemPrompt.value;showSystemPromptModal.value=false;await saveSessions();showToast('已保存');}
+async function saveChatSettings(){if(currentSession.value)await saveSessions();showChatSettingsModal.value=false;showToast('已保存');}
+async function clearCurrentChat(){if(!confirm('确定清空？'))return;currentMessages.value=[];if(currentSession.value){currentSession.value.messages=[];await saveSessions();}showChatSettingsModal.value=false;showToast('已清空');}
+function triggerChatImageUpload(){chatImageInput.value?.click();}
+async function handleChatImageUpload(e){const files=Array.from(e.target.files);for(const f of files){const u=await f2d(f);pendingImages.value.push(u);}e.target.value='';}
+async function handleCharAvatarUpload(e){const f=e.target.files[0];if(!f)return;const u=await f2d(f);if(currentSession.value){currentSession.value.charAvatar=u;await saveSessions();}e.target.value='';showToast('头像已更新');}
+function autoResizeInput(e){const el=e.target;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,90)+'px';}
+function scrollBottom(){if(messagesEl.value)messagesEl.value.scrollTop=messagesEl.value.scrollHeight;}
+
+// ===== 音乐播放器 =====
+const playlist=ref([]);const currentTrackIdx=ref(-1);const musicPlaying=ref(false);const musicCurrentSec=ref(0);const musicTotalSec=ref(0);
+const musicProgress=computed(()=>musicTotalSec.value>0?musicCurrentSec.value/musicTotalSec.value*100:0);
+const currentTrack=computed(()=>playlist.value[currentTrackIdx.value]||null);
+const audioEl=ref(null);const musicFileInput=ref(null);
+async function handleMusicImport(e){const files=Array.from(e.target.files);for(const f of files){const u=await f2d(f);const t={id:'t'+Date.now()+Math.random(),name:f.name.replace(/\.[^/.]+$/,''),artist:'本地文件',src:u,duration:0,cover:''};playlist.value.push(t);}await dbSet('playlist',playlist.value.map(t=>({...t,src:undefined})));e.target.value='';showToast('已导入 '+files.length+' 首');if(currentTrackIdx.value<0)playTrack(0);}
+function playTrack(idx){currentTrackIdx.value=idx;const t=playlist.value[idx];if(!t)return;audioEl.value.src=t.src;audioEl.value.play();musicPlaying.value=true;}
+function toggleMusicPlay(){if(!currentTrack.value)return;if(musicPlaying.value){audioEl.value.pause();musicPlaying.value=false;}else{audioEl.value.play();musicPlaying.value=true;}}
+function nextTrack(){const n=(currentTrackIdx.value+1)%playlist.value.length;if(playlist.value.length)playTrack(n);}
+function prevTrack(){const n=(currentTrackIdx.value-1+playlist.value.length)%playlist.value.length;if(playlist.value.length)playTrack(n);}
+function onAudioTimeUpdate(){musicCurrentSec.value=audioEl.value?.currentTime||0;}
+function onAudioMeta(){musicTotalSec.value=audioEl.value?.duration||0;}
+function seekMusic(e){if(!audioEl.value||!musicTotalSec.value)return;const pct=e.offsetX/e.currentTarget.offsetWidth;audioEl.value.currentTime=pct*musicTotalSec.value;}
+function removeTrack(idx){playlist.value.splice(idx,1);if(currentTrackIdx.value===idx){audioEl.value.pause();musicPlaying.value=false;currentTrackIdx.value=-1;}else if(currentTrackIdx.value>idx)currentTrackIdx.value--;}
+function fmtTime(s){const n=Math.floor(s||0);return Math.floor(n/60).toString().padStart(2,'0')+':'+(n%60).toString().padStart(2,'0');}
+
+// ===== 存储管理 =====
+const storageInfo=ref([]);
+async function calcStorageInfo(){storageInfo.value=[{label:'聊天数据',size:'计算中',pct:50,color:'#34c759'},{label:'API 配置',size:'已存',pct:20,color:'#007aff'},{label:'图片资源',size:'已存',pct:30,color:'#ff9500'}];}
+
+// ===== 保存页面布局 =====
+async function savePages(){await dbSet('pages_layout',JSON.parse(JSON.stringify(pages.value.map(p=>({apps:p.apps.map(a=>({id:a.id,label:a.label,color:a.color,icon:a.icon,customIcon:a.customIcon||''}))})))));}
+
+// ===== 初始化 =====
+onMounted(async()=>{
+  await openDB();
+  updateClock();clockTimer=setInterval(updateClock,10000);
+  // 用户资料
+  const p=await dbGet('profile');if(p)Object.assign(userProfile,p);
+  const av=await dbGet('profile_avatar');if(av)userProfile.avatarUrl=av;
+  // 壁纸
+  const wu=await dbGet('wallpaper_url');if(wu)wallpaperUrl.value=wu;
+  const ps=await dbGet('wallpaper_preset');if(ps){wallpaperPreset.value=ps;const st=await dbGet('wallpaper_preset_style');if(st)document.getElementById('wallpaper').style.background=st;}
+  const wc2=await dbGet('wallpaper_color');if(wc2&&!wu&&!ps)document.getElementById('wallpaper').style.background=wc2;
+  // 主题色
+  const tc=await dbGet('theme_color');if(tc)applyThemeColor(tc);
+  // 格言
+  const dm=await dbGet('desktop_motto');if(dm)desktopMotto.value=dm;
+  // CSS
+  const bc=await dbGet('beauty_css');if(bc){beautyCSS.value=bc;document.getElementById('custom-beauty-style').textContent=bc;}
+  // Our Journey
+  const jw=await dbGet('journey_widget');if(jw)Object.assign(journeyWidget,jw);
+  // 关于
+  const ai=await dbGet('app_info');if(ai)Object.assign(appInfo,ai);
+  const aiIcon=await dbGet('app_icon_url');if(aiIcon)appInfo.iconUrl=aiIcon;
+  updatePageTitle();
+  // API
+  const apis=await dbGet('api_configs');if(apis)savedApiConfigs.value=apis;
+  const aapi=await dbGet('active_api');if(aapi){Object.assign(currentApiConfig2,aapi);activeApiConfig.value=aapi;}
+  // 语音
+  const vc=await dbGet('voice_config');if(vc)Object.assign(voiceConfig,vc);
+  // 聊天
+  const sm=await dbGet('chat_meta');if(sm){for(const s of sm){const msgs=await dbGet('chat_msgs_'+s.id)||[];s.messages=msgs;}chatSessions.value=sm;}
+  // 页面布局
+  const pl=await dbGet('pages_layout');
+  if(pl){pages.value=pl.map(pg=>({apps:pg.apps.map(a=>({...a,icon:ICONS[a.id]||a.icon||''}))  }));}
+  // 格言存储
+  const dmt=await dbGet('desktop_motto');if(dmt)desktopMotto.value=dmt;
+});
+// 格言自动保存
+Vue.watch(desktopMotto,(v)=>{dbSet('desktop_motto',v);});
+
+onUnmounted(()=>clearInterval(clockTimer));
+
+return {
+  currentTime,fullDate,toast,editMode,pages,dockApps,allApps,currentPage,trackX,
+  onTouchStart,onTouchMove,onTouchEnd,onMouseDown,onMouseMove,onMouseUp,addPage,
+  startLongPress,clearLongPress,enterEditMode,exitEditMode,deleteApp,
+  onDragStart,onDragOver,onDrop,dragId,
+  openAddAppSheet,addAppToPage,showAddAppModal,addAppTargetPage,availableToAdd,
+  appNames,activeApp,settingSubPage,openApp,closeApp,openSubPage,
+  userProfile,avatarInput,handleAvatarUpload,saveProfile,
+  wallpaperUrl,wallpaperStyle,wallpaperInput,wallpaperPreset,bgTab,customBgColor,bgPresets,solidColors,
+  handleWallpaperUpload,clearWallpaper,applyBgPreset,applyBgColor,
+  currentThemeColor,themeColors,applyThemeColor,
+  desktopMotto,beautyCSS,applyBeautyCSS,
+  journeyWidget,journeyAvatarInput,handleJourneyAvatarUpload,saveJourney,
+  iconPickerInput,pickIconFor,handleIconPick,resetIcon,
+  appInfo,appIconInput,handleAppIconUpload,updatePageTitle,saveAppInfo,
+  currentApiConfig2,savedApiConfigs,activeApiConfig,fetchedModels,fetchModels,saveApiConfig,loadApiConfig,deleteApiConfig,testApiConfig,
+  voiceConfig,voiceTestText,testVoice,saveVoiceConfig,
+  chatView,chatSessions,currentSession,currentMessages,chatInput,isStreaming,showThinking,multiTurnEnabled,pendingImages,
+  messagesEl,chatInputEl,chatImageInput,
+  showNewSessionModal,newSessionChar,showCustomCharForm,customChar,builtinChars,
+  showSystemPromptModal,currentSessionSystemPrompt,showChatSettingsModal,charAvatarInput,
+  msgMenu,newSession,addCustomChar,confirmNewSession,openSession,deleteSession,
+  sendMessage,regenMsg,deleteMsg,copyMsg,startMsgLongPress,clearMsgLongPress,
+  insertNarration,openSystemPromptSheet,saveSystemPrompt,saveChatSettings,clearCurrentChat,
+  triggerChatImageUpload,handleChatImageUpload,handleCharAvatarUpload,autoResizeInput,
+  playlist,currentTrackIdx,musicPlaying,musicCurrentSec,musicTotalSec,musicProgress,currentTrack,
+  audioEl,musicFileInput,handleMusicImport,playTrack,toggleMusicPlay,nextTrack,prevTrack,
+  onAudioTimeUpdate,onAudioMeta,seekMusic,removeTrack,fmtTime,
+  storageInfo,
+};
+}
+}).mount('#app');
+</script>
+</body>
+</html>
